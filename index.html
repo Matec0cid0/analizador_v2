@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analizador de Bádminton v6 - Tendencias</title>
+  <title>Analizador de Bádminton v6 - Histórico</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
     * { box-sizing: border-box; }
@@ -175,7 +175,6 @@
   <!-- COLUMNA DERECHA: CONTROLES Y GOLPES -->
   <div class="controls-column">
 
-    <!-- Gestión de partidos -->
     <div style="display: flex; gap:4px;">
       <button class="btn btn-sm btn-info" onclick="guardarPartido()">💾</button>
       <select id="listaPartidos" style="flex:1; min-width:100px; font-size:0.7rem;">
@@ -185,7 +184,6 @@
       <button class="btn btn-sm btn-danger" onclick="nuevoPartido()">📝</button>
     </div>
 
-    <!-- Jugadores, toggle y lateralidad -->
     <div class="controls-inner">
       <div class="jugador-selector">
         <label style="font-size:0.7rem;"><strong>Propio:</strong></label>
@@ -205,7 +203,6 @@
       <button id="btnMano" class="btn btn-sm btn-info" onclick="toggleMano()">Mano: Diestro</button>
     </div>
 
-    <!-- Resultados -->
     <div class="result-row">
       <button class="btn-result btn-winner-propio" onclick="marcarResultado('winner-propio', 'propio')">
         🚀 W propio <span class="result-counter" id="counter-winner-propio">0</span>
@@ -221,13 +218,11 @@
       </button>
     </div>
 
-    <!-- Golpes agrupados por zona (se generan con JS) -->
     <div id="golpesContainer"></div>
   </div>
 
 </div>
 
-<!-- SECCIÓN INFERIOR: TABS -->
 <div class="bottom-section">
   <div class="tabs">
     <button id="btnTabEventos" class="tab-btn active" onclick="cambiarTab('eventos')">📋 Eventos</button>
@@ -255,10 +250,14 @@
   </div>
 
   <div id="tab-tendencias" class="tab-content stats-panel">
-    <h3>Tendencias por golpe</h3>
+    <h3>Tendencias</h3>
     <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-      <label>Seleccioná un golpe base:</label>
+      <label>Golpe base:</label>
       <select id="tendenciaGolpeSelect"></select>
+      <label style="margin-left:15px;">Histórico de:</label>
+      <select id="tendenciaJugadorSelect">
+        <option value="">-- Solo partido actual --</option>
+      </select>
     </div>
     <div id="tendenciaResult" style="font-size:0.8rem;"></div>
     <div class="chart-container" style="max-width:400px;">
@@ -460,7 +459,7 @@
     guardarTodo();
   }
 
-  // ---------- REGISTRO DE GOLPES (ZONA AUTOMÁTICA) ----------
+  // ---------- REGISTRO DE GOLPES ----------
   function registrarGolpe(variante) {
     if (!iframe?.src) return alert('Carga un video.');
     const jugador = ejecutorActual==='propio'?jugadorPropio:jugadorRival;
@@ -489,7 +488,7 @@
       <td class="result-cell">${ev.result ? `<span class="result-badge result-${ev.result}">${ev.result.replace('-',' ')}</span>` : ''}</td>
       <td>${ev.zona || ''}</td>
     `;
-    fila.querySelector('.tiempo-cell').onclick = () => seekTo(Math.max(0, ev.tiempo - 1));  // Retrocede 1 seg
+    fila.querySelector('.tiempo-cell').onclick = () => seekTo(Math.max(0, ev.tiempo - 1));
   }
 
   function actualizarFilaResultado(index, result) {
@@ -513,7 +512,6 @@
     document.getElementById('counter-out-rival').textContent = resultadosContador['out-rival'];
   }
 
-  // ---------- INTERFAZ DE GOLPES ----------
   function crearBotones() {
     const container = document.getElementById('golpesContainer');
     container.innerHTML = '';
@@ -521,7 +519,6 @@
       const zonaDiv = document.createElement('div'); zonaDiv.className = 'zona-golpes';
       zonaDiv.innerHTML = `<div class="zona-titulo">${zona}</div>`;
       const grid = document.createElement('div'); grid.className = 'golpes-grid';
-
       for (const [nombreBase, variantes] of Object.entries(golpes)) {
         const card = document.createElement('div'); card.className = 'golpe-card';
         const btnBase = document.createElement('div'); btnBase.className = 'golpe-nombre'; btnBase.textContent = nombreBase;
@@ -565,36 +562,62 @@
     if (tab==='tendencias') inicializarTendencias();
   }
 
-  // ---------- NUEVA PESTAÑA: TENDENCIAS POR GOLPE ----------
+  // ---------- TENDENCIAS (con histórico) ----------
   let chartTendencia;
 
   function inicializarTendencias() {
-    const select = document.getElementById('tendenciaGolpeSelect');
-    // Obtener todos los nombres base únicos (sin variantes)
+    // Llenar golpes base
+    const selectGolpe = document.getElementById('tendenciaGolpeSelect');
     const bases = [...new Set(todasLasVariantes.map(v => v.split(' ').slice(0, -1).join(' ')))].sort();
-    select.innerHTML = '';
-    bases.forEach(b => {
+    selectGolpe.innerHTML = '';
+    bases.forEach(b => { const opt = document.createElement('option'); opt.value = b; opt.textContent = b; selectGolpe.appendChild(opt); });
+
+    // Llenar jugadores para histórico
+    const selectJugador = document.getElementById('tendenciaJugadorSelect');
+    selectJugador.innerHTML = '<option value="">-- Solo partido actual --</option>';
+    jugadores.forEach(j => {
       const opt = document.createElement('option');
-      opt.value = b;
-      opt.textContent = b;
-      select.appendChild(opt);
+      opt.value = j;
+      opt.textContent = j;
+      selectJugador.appendChild(opt);
     });
-    select.onchange = () => mostrarTendencia(select.value);
+
+    selectGolpe.onchange = () => mostrarTendencia(selectGolpe.value);
+    selectJugador.onchange = () => mostrarTendencia(selectGolpe.value);
+
     if (bases.length) mostrarTendencia(bases[0]);
   }
 
+  function obtenerContadoresHistoricos(jugador) {
+    if (!jugador) return null; // null = usar contadores del partido actual
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV6') || '[]');
+    const acumulado = {};
+    partidos.forEach(p => {
+      if ((p.jugadorPropio === jugador || p.jugadorRival === jugador) && p.contadores) {
+        for (const [variante, datos] of Object.entries(p.contadores)) {
+          if (!acumulado[variante]) acumulado[variante] = { propio:0, rival:0 };
+          acumulado[variante].propio += datos.propio || 0;
+          acumulado[variante].rival += datos.rival || 0;
+        }
+      }
+    });
+    return acumulado;
+  }
+
   function mostrarTendencia(base) {
-    // Variantes que empiezan con ese base (ej. "Clear Drive Paralelo" empieza con "Clear")
+    const jugadorHistorico = document.getElementById('tendenciaJugadorSelect').value;
+    const fuente = jugadorHistorico ? obtenerContadoresHistoricos(jugadorHistorico) : contadores;
     const variantesDelBase = todasLasVariantes.filter(v => v.startsWith(base));
-    const total = variantesDelBase.reduce((sum, v) => sum + (contadores[v]?.propio || 0) + (contadores[v]?.rival || 0), 0);
+    let total = 0;
+    const data = variantesDelBase.map(v => {
+      const propio = fuente?.[v]?.propio || 0;
+      const rival = fuente?.[v]?.rival || 0;
+      const suma = propio + rival;
+      total += suma;
+      return { variante: v.replace(base + ' ', ''), total: suma };
+    });
 
-    const data = variantesDelBase.map(v => ({
-      variante: v.replace(base + ' ', ''),
-      total: (contadores[v]?.propio || 0) + (contadores[v]?.rival || 0)
-    }));
-
-    // Mostrar tabla simple con porcentajes
-    let html = `<p style="font-weight:bold;">Total de ${base}: ${total} golpes</p><ul>`;
+    let html = `<p style="font-weight:bold;">Total de ${base}: ${total} golpes ${jugadorHistorico ? 'de ' + jugadorHistorico : '(partido actual)'}</p><ul>`;
     data.forEach(d => {
       const pct = total ? ((d.total / total) * 100).toFixed(1) : 0;
       html += `<li>${d.variante}: ${d.total} (${pct}%)</li>`;
@@ -602,7 +625,6 @@
     html += '</ul>';
     document.getElementById('tendenciaResult').innerHTML = html;
 
-    // Gráfico de torta
     if (chartTendencia) chartTendencia.destroy();
     const ctx = document.getElementById('chartTendencia').getContext('2d');
     chartTendencia = new Chart(ctx, {
@@ -616,14 +638,12 @@
       },
       options: {
         responsive: true,
-        plugins: {
-          title: { display: true, text: `Distribución de ${base}` }
-        }
+        plugins: { title: { display: true, text: `Distribución de ${base} ${jugadorHistorico ? '(' + jugadorHistorico + ')' : ''}` } }
       }
     });
   }
 
-  // ---------- ESTADÍSTICAS (gráfico de barras general) ----------
+  // ---------- ESTADÍSTICAS ----------
   let chartGolpes;
   function generarEstadisticas() {
     document.getElementById('summaryCards').innerHTML = `
