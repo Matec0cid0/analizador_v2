@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analizador de Bádminton v5 - Zona automática</title>
+  <title>Analizador de Bádminton v6 - Tendencias</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
     * { box-sizing: border-box; }
@@ -150,15 +150,6 @@
     .summary-card h4 { margin: 0 0 4px 0; font-size: 0.7rem; }
     .summary-card .number { font-size: 1.5rem; font-weight: bold; }
 
-    .heatmap-container { display: flex; flex-direction: column; align-items: center; }
-    .heatmap-selector { margin-bottom: 10px; }
-    .heatmap-svg { width: 100%; max-width: 350px; height: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-    .zone-rect { transition: fill 0.3s; cursor: pointer; }
-    .zone-rect:hover { stroke: black; stroke-width: 2; }
-    .legend { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
-    .legend-item { display: flex; align-items: center; gap: 3px; font-size: 0.7rem; }
-    .legend-color { width: 16px; height: 16px; border-radius: 3px; }
-
     @media (max-width: 850px) {
       .main-layout { flex-direction: column; }
       .controls-column { max-height: none; overflow-y: visible; }
@@ -241,12 +232,12 @@
   <div class="tabs">
     <button id="btnTabEventos" class="tab-btn active" onclick="cambiarTab('eventos')">📋 Eventos</button>
     <button id="btnTabEstadisticas" class="tab-btn" onclick="cambiarTab('estadisticas')">📊 Estadísticas</button>
-    <button id="btnTabHeatmap" class="tab-btn" onclick="cambiarTab('heatmap')">🗺️ Mapa</button>
+    <button id="btnTabTendencias" class="tab-btn" onclick="cambiarTab('tendencias')">📈 Tendencias</button>
   </div>
 
   <div id="tab-eventos" class="tab-content active stats-panel">
     <h3>Eventos registrados</h3>
-    <p style="font-size:0.7rem;">Clic en el tiempo → retrocede 2 seg.</p>
+    <p style="font-size:0.7rem;">Clic en el tiempo → retrocede 1 seg.</p>
     <table class="table-events">
       <thead><tr><th>Ejec.</th><th>Tiempo</th><th>Golpe</th><th>Resultado</th><th>Zona (auto)</th></tr></thead>
       <tbody id="tablaEventos"></tbody>
@@ -263,39 +254,23 @@
     </div>
   </div>
 
-  <div id="tab-heatmap" class="tab-content stats-panel">
-    <h3>Mapa de Calor por Golpe</h3>
-    <div class="heatmap-selector">
-      <label>Filtrar por golpe base: </label>
-      <select id="heatmapGolpeSelect"><option value="Todos">Todos</option></select>
+  <div id="tab-tendencias" class="tab-content stats-panel">
+    <h3>Tendencias por golpe</h3>
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+      <label>Seleccioná un golpe base:</label>
+      <select id="tendenciaGolpeSelect"></select>
     </div>
-    <div class="heatmap-container">
-      <svg class="heatmap-svg" viewBox="0 0 400 450" id="heatmapSvg">
-        <rect width="400" height="450" fill="#e8f5e9" rx="10" />
-        <g stroke="white" stroke-width="2" fill="none">
-          <line x1="30" y1="40" x2="370" y2="40" /><line x1="30" y1="410" x2="370" y2="410" />
-          <line x1="30" y1="40" x2="30" y2="410" /><line x1="370" y1="40" x2="370" y2="410" />
-          <line x1="30" y1="160" x2="370" y2="160" /><line x1="30" y1="290" x2="370" y2="290" />
-          <line x1="30" y1="190" x2="370" y2="190" /><line x1="30" y1="260" x2="370" y2="260" />
-          <line x1="200" y1="40" x2="200" y2="410" stroke-dasharray="6,4" stroke-width="1.5" />
-          <line x1="30" y1="225" x2="370" y2="225" stroke="black" stroke-width="3" />
-        </g>
-      </svg>
-      <div class="legend">
-        <div class="legend-item"><div class="legend-color" style="background:#bbdefb;"></div> Baja</div>
-        <div class="legend-item"><div class="legend-color" style="background:#42a5f5;"></div> Media</div>
-        <div class="legend-item"><div class="legend-color" style="background:#ef5350;"></div> Alta</div>
-      </div>
+    <div id="tendenciaResult" style="font-size:0.8rem;"></div>
+    <div class="chart-container" style="max-width:400px;">
+      <canvas id="chartTendencia" width="300" height="200"></canvas>
     </div>
   </div>
 </div>
 
 <script>
   // ---------- CONFIGURACIÓN DE GOLPES Y ZONAS ----------
-  // manoActual: 'diestro' o 'zurdo'
   let manoActual = 'diestro';
 
-  // Mapa de zonas según golpe (para diestro). Para zurdo se invierten izquierda/derecha.
   const golpesPorZona = {
     'Fondo': {
       'Drop': ['Drop Drive Paralelo', 'Drop Drive Cruzado', 'Drop Rectificado Paralelo', 'Drop Rectificado Cruzado'],
@@ -317,9 +292,7 @@
     }
   };
 
-  // Asignación de zona automática según el golpe (versión diestro)
   const zonaPorGolpe = {
-    // Fondo
     'Drop Drive Paralelo': 'Fondo Derecha', 'Drop Drive Cruzado': 'Fondo Derecha',
     'Drop Rectificado Paralelo': 'Fondo Izquierda', 'Drop Rectificado Cruzado': 'Fondo Izquierda',
     'Smash Drive Paralelo': 'Fondo Derecha', 'Smash Drive Cruzado': 'Fondo Derecha',
@@ -332,14 +305,12 @@
     'Reves Clear Paralelo': 'Fondo Izquierda', 'Reves Clear Cruzado': 'Fondo Izquierda',
     'Barrido Drive Paralelo': 'Fondo Derecha', 'Barrido Drive Cruzado': 'Fondo Derecha',
     'Barrido Reves Paralelo': 'Fondo Izquierda', 'Barrido Reves Cruzado': 'Fondo Izquierda',
-    // Mitad
     'Defensa Drive Paralelo': 'Medio Derecha', 'Defensa Drive Cruzada': 'Medio Derecha',
     'Defensa Reves Paralela': 'Medio Izquierda', 'Defensa Reves Cruzada': 'Medio Izquierda',
     'Bloqueo Drive Paralelo': 'Medio Derecha', 'Bloqueo Drive Cruzado': 'Medio Derecha',
     'Bloqueo Reves Paralelo': 'Medio Izquierda', 'Bloqueo Reves Cruzado': 'Medio Izquierda',
     'Lift Drive Paralelo': 'Medio Derecha', 'Lift Drive Cruzado': 'Medio Derecha',
     'Lift Reves Paralelo': 'Medio Izquierda', 'Lift Reves Cruzado': 'Medio Izquierda',
-    // Red
     'Lob Drive Paralelo': 'Red Derecha', 'Lob Drive Cruzado': 'Red Derecha',
     'Lob Reves Paralelo': 'Red Izquierda', 'Lob Reves Cruzado': 'Red Izquierda',
     'Dejada Drive Paralela': 'Red Derecha', 'Dejada Drive Cruzada': 'Red Derecha',
@@ -348,23 +319,15 @@
     'Kill Reves Paralela': 'Red Izquierda', 'Kill Reves Cruzada': 'Red Izquierda'
   };
 
-  // Función para obtener la zona efectiva según la mano
   function obtenerZona(golpe) {
     const zona = zonaPorGolpe[golpe] || '';
     if (manoActual === 'diestro') return zona;
-    // Invertir izquierda/derecha para zurdos
     if (zona.includes('Izquierda')) return zona.replace('Izquierda', 'Derecha');
     if (zona.includes('Derecha')) return zona.replace('Derecha', 'Izquierda');
     return zona;
   }
 
   const todasLasVariantes = Object.values(golpesPorZona).flatMap(z => Object.values(z).flat());
-  const zonasDisponibles = [
-    'Red Izquierda', 'Red Centro', 'Red Derecha',
-    'Medio Izquierda', 'Medio Centro', 'Medio Derecha',
-    'Fondo Izquierda', 'Fondo Centro', 'Fondo Derecha'
-  ];
-
   let iframe, jugadores = JSON.parse(localStorage.getItem('jugadoresBadminton') || '[]');
   let jugadorPropio = localStorage.getItem('jugadorPropioBadminton') || '';
   let jugadorRival = localStorage.getItem('jugadorRivalBadminton') || '';
@@ -376,17 +339,17 @@
   inicializarContadores();
 
   function guardarTodo() {
-    localStorage.setItem('contadoresBadmintonV5', JSON.stringify(contadores));
-    localStorage.setItem('eventosBadmintonV5', JSON.stringify(eventos));
+    localStorage.setItem('contadoresBadmintonV6', JSON.stringify(contadores));
+    localStorage.setItem('eventosBadmintonV6', JSON.stringify(eventos));
     localStorage.setItem('jugadoresBadminton', JSON.stringify(jugadores));
     localStorage.setItem('jugadorPropioBadminton', jugadorPropio);
     localStorage.setItem('jugadorRivalBadminton', jugadorRival);
   }
 
   function cargarTodo() {
-    const cont = JSON.parse(localStorage.getItem('contadoresBadmintonV5') || '{}');
+    const cont = JSON.parse(localStorage.getItem('contadoresBadmintonV6') || '{}');
     if (Object.keys(cont).length) contadores = cont;
-    const evts = JSON.parse(localStorage.getItem('eventosBadmintonV5') || '[]');
+    const evts = JSON.parse(localStorage.getItem('eventosBadmintonV6') || '[]');
     if (evts.length) {
       eventos = evts;
       document.getElementById('tablaEventos').innerHTML = '';
@@ -400,7 +363,7 @@
   cargarTodo();
 
   function cargarListaPartidos() {
-    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV5') || '[]');
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV6') || '[]');
     const sel = document.getElementById('listaPartidos');
     sel.innerHTML = '<option value="">-- Partidos --</option>';
     partidos.forEach((p,i) => { const o = document.createElement('option'); o.value = i; o.textContent = p.nombre; sel.appendChild(o); });
@@ -409,16 +372,16 @@
   function guardarPartido() {
     const nombre = prompt('Nombre:');
     if (!nombre) return;
-    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV5') || '[]');
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV6') || '[]');
     partidos.push({ nombre, fecha: new Date().toLocaleString(), videoUrl: document.getElementById('urlInput').value, jugadores, jugadorPropio, jugadorRival, contadores: JSON.parse(JSON.stringify(contadores)), eventos: JSON.parse(JSON.stringify(eventos)), resultadosContador: {...resultadosContador} });
-    localStorage.setItem('partidosBadmintonV5', JSON.stringify(partidos));
+    localStorage.setItem('partidosBadmintonV6', JSON.stringify(partidos));
     cargarListaPartidos(); alert('Guardado.');
   }
 
   function cargarPartido() {
     const idx = document.getElementById('listaPartidos').value;
     if (idx==='') return;
-    const partido = JSON.parse(localStorage.getItem('partidosBadmintonV5') || '[]')[parseInt(idx)];
+    const partido = JSON.parse(localStorage.getItem('partidosBadmintonV6') || '[]')[parseInt(idx)];
     if (!partido) return;
     jugadores = partido.jugadores || [];
     jugadorPropio = partido.jugadorPropio || '';
@@ -486,20 +449,18 @@
     document.getElementById('toggleRival').className = `toggle-btn ${ej==='rival'?'toggle-activo':'toggle-inactivo'}`;
   }
 
-  // ---------- LATERALIDAD ----------
   function toggleMano() {
     manoActual = manoActual === 'diestro' ? 'zurdo' : 'diestro';
     document.getElementById('btnMano').textContent = `Mano: ${manoActual.charAt(0).toUpperCase()+manoActual.slice(1)}`;
-    // Actualizar las zonas en la tabla de eventos para reflejar el cambio
     document.getElementById('tablaEventos').innerHTML = '';
     eventos.forEach((e, i) => {
-      e.zona = obtenerZona(e.tipo); // recalcular con la nueva mano
+      e.zona = obtenerZona(e.tipo);
       agregarFilaTabla(i, e);
     });
     guardarTodo();
   }
 
-  // ---------- REGISTRO DE GOLPES ----------
+  // ---------- REGISTRO DE GOLPES (ZONA AUTOMÁTICA) ----------
   function registrarGolpe(variante) {
     if (!iframe?.src) return alert('Carga un video.');
     const jugador = ejecutorActual==='propio'?jugadorPropio:jugadorRival;
@@ -510,7 +471,7 @@
     contadores[variante][ejecutorActual]++;
     guardarTodo(); actualizarBadgeDeVariante(variante);
 
-    const zona = obtenerZona(variante); // Asignación automática
+    const zona = obtenerZona(variante);
     const evento = { jugador, tiempo, tipo: variante, ejecutor: ejecutorActual, result: null, zona };
     eventos.push(evento);
     agregarFilaTabla(eventos.length-1, evento);
@@ -528,7 +489,7 @@
       <td class="result-cell">${ev.result ? `<span class="result-badge result-${ev.result}">${ev.result.replace('-',' ')}</span>` : ''}</td>
       <td>${ev.zona || ''}</td>
     `;
-    fila.querySelector('.tiempo-cell').onclick = () => seekTo(Math.max(0, ev.tiempo-2));
+    fila.querySelector('.tiempo-cell').onclick = () => seekTo(Math.max(0, ev.tiempo - 1));  // Retrocede 1 seg
   }
 
   function actualizarFilaResultado(index, result) {
@@ -594,67 +555,75 @@
   }
 
   function cambiarTab(tab) {
-    ['eventos','estadisticas','heatmap'].forEach(t => {
+    ['eventos','estadisticas','tendencias'].forEach(t => {
       document.getElementById(`btnTab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.remove('active');
       document.getElementById(`tab-${t}`).classList.remove('active');
     });
     document.getElementById(`btnTab${tab.charAt(0).toUpperCase()+tab.slice(1)}`).classList.add('active');
     document.getElementById(`tab-${tab}`).classList.add('active');
     if (tab==='estadisticas') generarEstadisticas();
-    if (tab==='heatmap') inicializarMapaCalor();
+    if (tab==='tendencias') inicializarTendencias();
   }
 
-  // ---------- MAPA DE CALOR (ahora por dirección) ----------
-  function inicializarMapaCalor() {
-    const select = document.getElementById('heatmapGolpeSelect');
-    select.innerHTML = '<option value="Todos">Todos</option>';
-    // Extraer golpes base (sin dirección) para el filtro
-    const bases = [...new Set(eventos.map(e => e.tipo.split(' ').slice(0, -1).join(' ')))].sort();
+  // ---------- NUEVA PESTAÑA: TENDENCIAS POR GOLPE ----------
+  let chartTendencia;
+
+  function inicializarTendencias() {
+    const select = document.getElementById('tendenciaGolpeSelect');
+    // Obtener todos los nombres base únicos (sin variantes)
+    const bases = [...new Set(todasLasVariantes.map(v => v.split(' ').slice(0, -1).join(' ')))].sort();
+    select.innerHTML = '';
     bases.forEach(b => {
-      const o = document.createElement('option'); o.value = b; o.textContent = b; select.appendChild(o);
+      const opt = document.createElement('option');
+      opt.value = b;
+      opt.textContent = b;
+      select.appendChild(opt);
     });
-    select.onchange = () => dibujarHeatmap(select.value);
-    dibujarHeatmap('Todos');
+    select.onchange = () => mostrarTendencia(select.value);
+    if (bases.length) mostrarTendencia(bases[0]);
   }
 
-  function dibujarHeatmap(filtroBase) {
-    const svg = document.getElementById('heatmapSvg'); svg.querySelectorAll('.zone-rect, text').forEach(el=>el.remove());
-    let evs = eventos;
-    if (filtroBase !== 'Todos') {
-      evs = evs.filter(e => e.tipo.startsWith(filtroBase));
-    }
-    // Contar por zona (la zona automática ya viene en el evento)
-    const conteo = {};
-    zonasDisponibles.forEach(z => conteo[z] = 0);
-    evs.forEach(e => { if (e.zona) conteo[e.zona]++; });
-    const max = Math.max(...Object.values(conteo),1), min = Math.min(...Object.values(conteo));
-    const getColor = (val) => {
-      if (max===min) return '#95a5a6';
-      const ratio = (val-min)/(max-min);
-      const r = Math.round(59+ratio*180), g = Math.round(130+ratio*(83-130)), b = Math.round(246+ratio*(80-246));
-      return `rgb(${r},${g},${b})`;
-    };
-    const coords = [
-      ['Red Izquierda',30,40,113,150],['Red Centro',144,40,112,150],['Red Derecha',257,40,113,150],
-      ['Medio Izquierda',30,190,113,70],['Medio Centro',144,190,112,70],['Medio Derecha',257,190,113,70],
-      ['Fondo Izquierda',30,260,113,150],['Fondo Centro',144,260,112,150],['Fondo Derecha',257,260,113,150]
-    ];
-    coords.forEach(([zona,x,y,w,h])=>{
-      const freq = conteo[zona];
-      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      rect.setAttribute('x',x); rect.setAttribute('y',y); rect.setAttribute('width',w); rect.setAttribute('height',h);
-      rect.setAttribute('fill',getColor(freq)); rect.setAttribute('rx','4'); rect.setAttribute('class','zone-rect');
-      svg.appendChild(rect);
-      const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      txt.setAttribute('x',x+w/2); txt.setAttribute('y',y+h/2);
-      txt.setAttribute('text-anchor','middle'); txt.setAttribute('fill',freq>max/2?'white':'black');
-      txt.setAttribute('font-size','10'); txt.setAttribute('font-weight','bold');
-      txt.textContent = `${zona.split(' ')[0].substring(0,3)} ${freq}`;
-      svg.appendChild(txt);
+  function mostrarTendencia(base) {
+    // Variantes que empiezan con ese base (ej. "Clear Drive Paralelo" empieza con "Clear")
+    const variantesDelBase = todasLasVariantes.filter(v => v.startsWith(base));
+    const total = variantesDelBase.reduce((sum, v) => sum + (contadores[v]?.propio || 0) + (contadores[v]?.rival || 0), 0);
+
+    const data = variantesDelBase.map(v => ({
+      variante: v.replace(base + ' ', ''),
+      total: (contadores[v]?.propio || 0) + (contadores[v]?.rival || 0)
+    }));
+
+    // Mostrar tabla simple con porcentajes
+    let html = `<p style="font-weight:bold;">Total de ${base}: ${total} golpes</p><ul>`;
+    data.forEach(d => {
+      const pct = total ? ((d.total / total) * 100).toFixed(1) : 0;
+      html += `<li>${d.variante}: ${d.total} (${pct}%)</li>`;
+    });
+    html += '</ul>';
+    document.getElementById('tendenciaResult').innerHTML = html;
+
+    // Gráfico de torta
+    if (chartTendencia) chartTendencia.destroy();
+    const ctx = document.getElementById('chartTendencia').getContext('2d');
+    chartTendencia = new Chart(ctx, {
+      type: 'pie',
+      data: {
+        labels: data.map(d => d.variante),
+        datasets: [{
+          data: data.map(d => d.total),
+          backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6c757d', '#007bff']
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          title: { display: true, text: `Distribución de ${base}` }
+        }
+      }
     });
   }
 
-  // ---------- ESTADÍSTICAS ----------
+  // ---------- ESTADÍSTICAS (gráfico de barras general) ----------
   let chartGolpes;
   function generarEstadisticas() {
     document.getElementById('summaryCards').innerHTML = `
