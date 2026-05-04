@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analizador de Bádminton v2 - Desplegables</title>
+  <title>Analizador de Bádminton v2 - Golpes Desplegables</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
     * { box-sizing: border-box; }
@@ -53,19 +53,15 @@
       font-size: 0.85rem; transition: 0.2s; display: flex; align-items: center; gap: 6px;
     }
     .btn-winner-propio { background: #d4edda; color: #155724; border: 2px solid #28a745; }
-    .btn-winner-propio:hover { background: #28a745; color: white; }
     .btn-out-propio { background: #f8d7da; color: #721c24; border: 2px solid #dc3545; }
-    .btn-out-propio:hover { background: #dc3545; color: white; }
     .btn-winner-rival { background: #fff3cd; color: #856404; border: 2px solid #ffc107; }
-    .btn-winner-rival:hover { background: #ffc107; color: #212529; }
     .btn-out-rival { background: #e2e3e5; color: #383d41; border: 2px solid #6c757d; }
-    .btn-out-rival:hover { background: #6c757d; color: white; }
     .result-counter {
       background: rgba(0,0,0,0.1); border-radius: 10px; padding: 2px 8px;
       font-size: 0.8rem; margin-left: 4px;
     }
 
-    /* NUEVO: estilos para golpes desplegables */
+    /* Golpes desplegables */
     .golpes-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;
       margin: 15px 0;
@@ -76,22 +72,22 @@
     }
     .golpe-nombre {
       font-weight: bold; font-size: 0.9rem; margin-bottom: 6px; text-align: center;
-      padding: 6px; background: #007bff; color: white; border-radius: 4px;
-      cursor: pointer; user-select: none;
+      padding: 8px; background: #007bff; color: white; border-radius: 6px;
+      cursor: pointer; user-select: none; transition: background 0.2s;
     }
     .golpe-nombre:hover { background: #0056b3; }
     .variantes-container {
-      display: none; /* oculto por defecto */
-      flex-direction: column; gap: 4px;
+      display: none;
+      flex-direction: column; gap: 4px; margin-top: 6px;
     }
     .variantes-container.visible { display: flex; }
     .variante-btn {
-      padding: 6px; border: 1px solid #ddd; border-radius: 4px;
+      padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px;
       background: #f8f9fa; cursor: pointer; font-size: 0.8rem;
-      position: relative; text-align: center;
+      position: relative; text-align: center; transition: background 0.2s;
     }
     .variante-btn:hover { background: #e2e6ea; }
-    .variante-btn .badge {
+    .badge {
       position: absolute; top: -6px; right: -6px; background: #333; color: white;
       border-radius: 50%; width: 20px; height: 20px;
       display: flex; align-items: center; justify-content: center;
@@ -210,7 +206,7 @@
     </button>
   </div>
 
-  <!-- NUEVO: Golpes con desplegables -->
+  <!-- NUEVO: Golpes con desplegables inteligentes -->
   <h2>Registro de golpes</h2>
   <div id="golpesContainer" class="golpes-grid"></div>
 
@@ -280,16 +276,42 @@
 <script>
   // ---------- CONFIGURACIÓN DE GOLPES ----------
   const golpesConVariantes = {
-    'Drop': ['Drop Drive Paralelo', 'Drop Drive Cruzado', 'Drop Rectificado Paralelo', 'Drop Rectificado Cruzado'],
-    'Clear': ['Clear Paralelo', 'Clear Cruzado', 'Clear Revés Paralelo', 'Clear Revés Cruzado'],
-    'Smash': ['Smash Paralelo', 'Smash Cruzado', 'Stick Smash Paralelo', 'Stick Smash Cruzado', 'Smash Rectificado Paralelo', 'Smash Rectificado Cruzado'],
-    'Bloqueo': ['Bloqueo Paralelo', 'Bloqueo Cruzado', 'Bloqueo Defensivo Paralelo', 'Bloqueo Defensivo Cruzado'],
-    'Defensa': ['Defensa Paralelo', 'Defensa Cruzado', 'Defensa Profunda Paralelo', 'Defensa Profunda Cruzado'],
-    'Dejada': ['Dejada Paralelo', 'Dejada Cruzado', 'Dejada Rectificado Paralelo', 'Dejada Rectificado Cruzado'],
-    'Lob': ['Lob Paralelo', 'Lob Cruzado'],
-    'Lift': ['Lift Paralelo', 'Lift Cruzado'],
-    'Barrido': ['Barrido Paralelo', 'Barrido Cruzado', 'Barrido Revés Paralelo', 'Barrido Revés Cruzado'],
-    'Kill': ['Kill Paralelo', 'Kill Cruzado']
+    'Drop': [
+      'Drop Drive Paralelo', 'Drop Drive Cruzado',
+      'Drop Rectificado Paralelo', 'Drop Rectificado Cruzado'
+    ],
+    'Clear': [
+      'Clear Paralelo', 'Clear Cruzado',
+      'Clear Revés Paralelo', 'Clear Revés Cruzado'
+    ],
+    'Smash': [
+      'Smash Paralelo', 'Smash Cruzado',
+      'Stick Smash Paralelo', 'Stick Smash Cruzado'
+    ],
+    'Bloqueo': [
+      'Bloqueo Paralelo', 'Bloqueo Cruzado'
+    ],
+    'Defensa': [
+      'Defensa Paralelo', 'Defensa Cruzado',
+      'Defensa Profunda Paralelo', 'Defensa Profunda Cruzado'
+    ],
+    'Dejada': [
+      'Dejada Paralelo', 'Dejada Cruzado',
+      'Dejada Rectificado Paralelo', 'Dejada Rectificado Cruzado'
+    ],
+    'Lob': [
+      'Lob Paralelo', 'Lob Cruzado'
+    ],
+    'Lift': [
+      'Lift Paralelo', 'Lift Cruzado'
+    ],
+    'Barrido': [
+      'Barrido Paralelo', 'Barrido Cruzado',
+      'Barrido Revés Paralelo', 'Barrido Revés Cruzado'
+    ],
+    'Kill': [
+      'Kill Paralelo', 'Kill Cruzado'
+    ]
   };
 
   const todasLasVariantes = Object.values(golpesConVariantes).flat();
@@ -315,10 +337,10 @@
     'out-rival': 0
   };
 
-  // ---------- INICIALIZACIÓN DE CONTADORES ----------
+  // ---------- INICIALIZACIÓN ----------
   function inicializarContadores() {
-    todasLasVariantes.forEach(variante => {
-      if (!(variante in contadores)) contadores[variante] = { propio: 0, rival: 0 };
+    todasLasVariantes.forEach(v => {
+      if (!(v in contadores)) contadores[v] = { propio: 0, rival: 0 };
     });
   }
   inicializarContadores();
@@ -352,41 +374,36 @@
     const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV2') || '[]');
     const select = document.getElementById('listaPartidos');
     select.innerHTML = '<option value="">-- Cargar partido guardado --</option>';
-    partidos.forEach((p, index) => {
+    partidos.forEach((p, i) => {
       const option = document.createElement('option');
-      option.value = index;
+      option.value = i;
       option.textContent = `${p.nombre} (${p.fecha}) - ${p.videoUrl || 'sin video'}`;
       select.appendChild(option);
     });
   }
 
   function guardarPartido() {
-    const nombre = prompt('Nombre para este partido:');
+    const nombre = prompt('Nombre del partido:');
     if (!nombre) return;
     const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV2') || '[]');
-    const nuevoPartido = {
+    partidos.push({
       nombre,
       fecha: new Date().toLocaleString(),
       videoUrl: document.getElementById('urlInput').value,
-      jugadores: jugadores,
-      jugadorPropio,
-      jugadorRival,
+      jugadores, jugadorPropio, jugadorRival,
       contadores: JSON.parse(JSON.stringify(contadores)),
       eventos: JSON.parse(JSON.stringify(eventos)),
       resultadosContador: { ...resultadosContador }
-    };
-    partidos.push(nuevoPartido);
+    });
     localStorage.setItem('partidosBadmintonV2', JSON.stringify(partidos));
     cargarListaPartidos();
     alert('Partido guardado.');
   }
 
   function cargarPartido() {
-    const select = document.getElementById('listaPartidos');
-    const index = select.value;
-    if (index === '') { alert('Selecciona un partido.'); return; }
-    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV2') || '[]');
-    const partido = partidos[parseInt(index)];
+    const idx = document.getElementById('listaPartidos').value;
+    if (idx === '') return alert('Selecciona un partido.');
+    const partido = JSON.parse(localStorage.getItem('partidosBadmintonV2') || '[]')[parseInt(idx)];
     if (!partido) return;
     jugadores = partido.jugadores || [];
     jugadorPropio = partido.jugadorPropio || '';
@@ -408,22 +425,20 @@
   }
 
   function nuevoPartido() {
-    if (confirm('¿Empezar nuevo análisis? Se limpiarán los datos actuales.')) {
-      contadores = {};
-      inicializarContadores();
-      eventos = [];
-      resultadosContador = { 'winner-propio': 0, 'out-propio': 0, 'winner-rival': 0, 'out-rival': 0 };
-      actualizarContadoresResultados();
-      guardarTodo();
-      document.getElementById('tablaEventos').innerHTML = '';
-      actualizarTodosLosContadoresVisuales();
-    }
+    if (!confirm('¿Empezar un nuevo análisis?')) return;
+    contadores = {};
+    inicializarContadores();
+    eventos = [];
+    resultadosContador = { 'winner-propio': 0, 'out-propio': 0, 'winner-rival': 0, 'out-rival': 0 };
+    actualizarContadoresResultados();
+    guardarTodo();
+    document.getElementById('tablaEventos').innerHTML = '';
+    actualizarTodosLosContadoresVisuales();
   }
 
-  // ---------- VIDEO (igual que antes) ----------
+  // ---------- VIDEO ----------
   function extraerID(url) {
-    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
-    const match = url.match(regex);
+    const match = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
     return match ? match[1] : null;
   }
 
@@ -431,159 +446,125 @@
     const url = document.getElementById('urlInput').value.trim();
     document.getElementById('errorMsg').classList.add('hidden');
     document.getElementById('loading').classList.remove('hidden');
-    if (!url) { mostrarError('Pega un enlace de YouTube.'); return; }
-    const videoId = extraerID(url);
-    if (!videoId) { mostrarError('No se pudo extraer el ID.'); return; }
+    if (!url) return mostrarError('Pega un enlace de YouTube.');
+    const id = extraerID(url);
+    if (!id) return mostrarError('No se pudo extraer el ID.');
     iframe = document.getElementById('youtube-frame');
-    iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+    iframe.src = `https://www.youtube.com/embed/${id}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
     document.getElementById('loading').classList.add('hidden');
   }
 
-  function mostrarError(mensaje) {
-    document.getElementById('errorMsg').textContent = mensaje;
+  function mostrarError(msg) {
+    document.getElementById('errorMsg').textContent = msg;
     document.getElementById('errorMsg').classList.remove('hidden');
     document.getElementById('loading').classList.add('hidden');
   }
 
-  window.addEventListener('message', (event) => {
-    if (event.origin !== 'https://www.youtube.com') return;
+  window.addEventListener('message', (e) => {
+    if (e.origin !== 'https://www.youtube.com') return;
     try {
-      const data = JSON.parse(event.data);
+      const data = JSON.parse(e.data);
       if (data.event === 'infoDelivery' && data.info?.currentTime) {
         window.iframeCurrentTime = data.info.currentTime;
       }
-    } catch(e) {}
+    } catch(ex) {}
   });
 
-  function solicitarTiempo() {
+  setInterval(() => {
     if (!iframe?.contentWindow) return;
     iframe.contentWindow.postMessage('{"event":"listening","id":1}', 'https://www.youtube.com');
-  }
-  setInterval(solicitarTiempo, 500);
+  }, 500);
 
-  function seekTo(seconds) {
+  function seekTo(s) {
     if (!iframe?.contentWindow) return;
-    iframe.contentWindow.postMessage(
-      JSON.stringify({event: 'command', func: 'seekTo', args: [seconds, true]}),
-      'https://www.youtube.com'
-    );
+    iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[s,true]}), 'https://www.youtube.com');
   }
 
   // ---------- JUGADORES ----------
   function actualizarSelectores() {
-    const selPropio = document.getElementById('jugadorPropio');
-    const selRival = document.getElementById('jugadorRival');
-    const opciones = jugadores.map(j => `<option value="${j}" ${j === jugadorPropio ? 'selected' : ''}>${j}</option>`).join('');
-    selPropio.innerHTML = opciones || '<option value="">-- Sin jugador --</option>';
-    selRival.innerHTML = jugadores.map(j => `<option value="${j}" ${j === jugadorRival ? 'selected' : ''}>${j}</option>`).join('') || '<option value="">-- Sin jugador --</option>';
+    const prop = document.getElementById('jugadorPropio');
+    const rival = document.getElementById('jugadorRival');
+    const op = jugadores.map(j => `<option value="${j}" ${j===jugadorPropio?'selected':''}>${j}</option>`).join('');
+    prop.innerHTML = op || '<option value="">-- Sin jugador --</option>';
+    rival.innerHTML = jugadores.map(j => `<option value="${j}" ${j===jugadorRival?'selected':''}>${j}</option>`).join('') || '<option value="">-- Sin jugador --</option>';
   }
 
   function agregarJugador(tipo) {
-    const nombre = prompt('Nombre del jugador:');
-    if (nombre && !jugadores.includes(nombre)) {
-      jugadores.push(nombre);
-      localStorage.setItem('jugadoresBadminton', JSON.stringify(jugadores));
-      if (tipo === 'propio') {
-        jugadorPropio = nombre;
-        localStorage.setItem('jugadorPropioBadminton', nombre);
-      } else {
-        jugadorRival = nombre;
-        localStorage.setItem('jugadorRivalBadminton', nombre);
-      }
-      actualizarSelectores();
-      document.getElementById(tipo === 'propio' ? 'jugadorPropio' : 'jugadorRival').value = nombre;
+    const nombre = prompt('Nombre:');
+    if (!nombre || jugadores.includes(nombre)) return;
+    jugadores.push(nombre);
+    localStorage.setItem('jugadoresBadminton', JSON.stringify(jugadores));
+    if (tipo === 'propio') {
+      jugadorPropio = nombre;
+      localStorage.setItem('jugadorPropioBadminton', nombre);
+    } else {
+      jugadorRival = nombre;
+      localStorage.setItem('jugadorRivalBadminton', nombre);
     }
+    actualizarSelectores();
+    document.getElementById(tipo==='propio'?'jugadorPropio':'jugadorRival').value = nombre;
   }
 
-  document.getElementById('jugadorPropio').addEventListener('change', (e) => {
-    jugadorPropio = e.target.value;
-    localStorage.setItem('jugadorPropioBadminton', jugadorPropio);
-  });
-  document.getElementById('jugadorRival').addEventListener('change', (e) => {
-    jugadorRival = e.target.value;
-    localStorage.setItem('jugadorRivalBadminton', jugadorRival);
-  });
+  document.getElementById('jugadorPropio').onchange = e => { jugadorPropio = e.target.value; localStorage.setItem('jugadorPropioBadminton', jugadorPropio); };
+  document.getElementById('jugadorRival').onchange = e => { jugadorRival = e.target.value; localStorage.setItem('jugadorRivalBadminton', jugadorRival); };
 
-  function cambiarEjecutor(ejecutor) {
-    ejecutorActual = ejecutor;
-    document.getElementById('togglePropio').className = `toggle-btn ${ejecutor === 'propio' ? 'toggle-activo' : 'toggle-inactivo'}`;
-    document.getElementById('toggleRival').className = `toggle-btn ${ejecutor === 'rival' ? 'toggle-activo' : 'toggle-inactivo'}`;
+  function cambiarEjecutor(ej) {
+    ejecutorActual = ej;
+    document.getElementById('togglePropio').className = `toggle-btn ${ej==='propio'?'toggle-activo':'toggle-inactivo'}`;
+    document.getElementById('toggleRival').className = `toggle-btn ${ej==='rival'?'toggle-activo':'toggle-inactivo'}`;
   }
 
-  // ---------- REGISTRO DE GOLPES (con variante) ----------
-  function registrarGolpe(varianteCompleta) {
-    if (!iframe?.src) { alert('Carga un video primero.'); return; }
+  // ---------- REGISTRO DE GOLPES ----------
+  function registrarGolpe(variante) {
+    if (!iframe?.src) return alert('Carga un video primero.');
     const jugador = ejecutorActual === 'propio' ? jugadorPropio : jugadorRival;
-    if (!jugador) {
-      alert(`Debes seleccionar un jugador ${ejecutorActual === 'propio' ? 'propio' : 'rival'}.`);
-      return;
-    }
+    if (!jugador) return alert(`Falta jugador ${ejecutorActual}.`);
     const tiempo = window.iframeCurrentTime;
-    if (tiempo === undefined || tiempo === null) {
-      alert('Espera unos segundos a que el video esté listo.');
-      solicitarTiempo();
-      return;
-    }
+    if (tiempo == null) return alert('Espera que el video esté listo.');
 
-    if (!contadores[varianteCompleta]) contadores[varianteCompleta] = { propio: 0, rival: 0 };
-    contadores[varianteCompleta][ejecutorActual]++;
+    if (!contadores[variante]) contadores[variante] = { propio: 0, rival: 0 };
+    contadores[variante][ejecutorActual]++;
     guardarTodo();
-    actualizarBadgeDeVariante(varianteCompleta);
+    actualizarBadgeDeVariante(variante);
 
-    const evento = {
-      jugador, tiempo, tipo: varianteCompleta, ejecutor: ejecutorActual,
-      result: null,
-      zona: null
-    };
+    const evento = { jugador, tiempo, tipo: variante, ejecutor: ejecutorActual, result: null, zona: null };
     eventos.push(evento);
     agregarFilaTabla(eventos.length - 1, evento);
     guardarTodo();
   }
 
-  function agregarFilaTabla(index, evento) {
+  function agregarFilaTabla(index, ev) {
     const tbody = document.getElementById('tablaEventos');
     const fila = tbody.insertRow();
     fila.id = `row-${index}`;
-    const mins = Math.floor(evento.tiempo / 60);
-    const secs = Math.floor(evento.tiempo % 60);
-
-    let zonaOptions = zonasDisponibles.map(z => `<option value="${z}" ${evento.zona === z ? 'selected' : ''}>${z}</option>`).join('');
-    zonaOptions = `<option value="">--</option>` + zonaOptions;
+    const m = Math.floor(ev.tiempo / 60);
+    const s = Math.floor(ev.tiempo % 60);
+    let zonas = zonasDisponibles.map(z => `<option value="${z}" ${ev.zona===z?'selected':''}>${z}</option>`).join('');
+    zonas = '<option value="">--</option>' + zonas;
 
     fila.innerHTML = `
-      <td>${evento.jugador} (${evento.ejecutor === 'propio' ? 'Nos.' : 'Riv.'})</td>
-      <td class="tiempo-cell" data-tiempo="${evento.tiempo}">${mins}:${secs.toString().padStart(2, '0')}</td>
-      <td>${evento.tipo}</td>
-      <td class="result-cell">${evento.result ? `<span class="result-badge result-${evento.result}">${evento.result.replace('-', ' ')}</span>` : ''}</td>
-      <td>
-        <select class="zona-select" data-index="${index}">
-          ${zonaOptions}
-        </select>
-      </td>
+      <td>${ev.jugador} (${ev.ejecutor==='propio'?'Nos.':'Riv.'})</td>
+      <td class="tiempo-cell" data-tiempo="${ev.tiempo}">${m}:${s.toString().padStart(2,'0')}</td>
+      <td>${ev.tipo}</td>
+      <td class="result-cell">${ev.result ? `<span class="result-badge result-${ev.result}">${ev.result.replace('-',' ')}</span>` : ''}</td>
+      <td><select class="zona-select" data-index="${index}">${zonas}</select></td>
     `;
-
-    fila.querySelector('.tiempo-cell').addEventListener('click', () => seekTo(Math.max(0, evento.tiempo - 2)));
-    fila.querySelector('.zona-select').addEventListener('change', function(e) {
-      const idx = parseInt(this.dataset.index);
-      eventos[idx].zona = e.target.value || null;
+    fila.querySelector('.tiempo-cell').onclick = () => seekTo(Math.max(0, ev.tiempo - 2));
+    fila.querySelector('.zona-select').onchange = function() {
+      eventos[parseInt(this.dataset.index)].zona = this.value || null;
       guardarTodo();
-    });
+    };
   }
 
   function actualizarFilaResultado(index, result) {
     const fila = document.getElementById(`row-${index}`);
-    if (!fila) return;
-    fila.querySelector('.result-cell').innerHTML = result ? `<span class="result-badge result-${result}">${result.replace('-', ' ')}</span>` : '';
+    if (fila) fila.querySelector('.result-cell').innerHTML = result ? `<span class="result-badge result-${result}">${result.replace('-',' ')}</span>` : '';
   }
 
-  // ---------- RESULTADOS ----------
-  function marcarResultado(result, ejecutorRequerido) {
-    const eventosSinResultado = eventos.filter(e => e.result === null && e.ejecutor === ejecutorRequerido);
-    if (eventosSinResultado.length === 0) {
-      alert(`No hay golpes de ${ejecutorRequerido === 'propio' ? 'tu equipo' : 'del rival'} sin resultado.`);
-      return;
-    }
-    const ultimo = eventosSinResultado[eventosSinResultado.length - 1];
+  function marcarResultado(result, ejecutor) {
+    const candidatos = eventos.filter(e => e.result === null && e.ejecutor === ejecutor);
+    if (!candidatos.length) return alert(`No hay golpes de ${ejecutor==='propio'?'tu equipo':'del rival'} sin resultado.`);
+    const ultimo = candidatos[candidatos.length-1];
     const index = eventos.indexOf(ultimo);
     eventos[index].result = result;
     guardarTodo();
@@ -599,173 +580,133 @@
     document.getElementById('counter-out-rival').textContent = resultadosContador['out-rival'];
   }
 
-  // ---------- INTERFAZ DE GOLPES DESPLEGABLES ----------
+  // ---------- BOTONES DESPLEGABLES ----------
   function crearBotones() {
     const container = document.getElementById('golpesContainer');
     container.innerHTML = '';
-    for (const [golpeBase, variantes] of Object.entries(golpesConVariantes)) {
+    for (const [base, variantes] of Object.entries(golpesConVariantes)) {
       const card = document.createElement('div');
       card.className = 'golpe-card';
 
-      // Botón principal que despliega/oculta
-      const btnGolpe = document.createElement('div');
-      btnGolpe.className = 'golpe-nombre';
-      btnGolpe.textContent = golpeBase;
-      btnGolpe.addEventListener('click', function(e) {
+      const btnBase = document.createElement('div');
+      btnBase.className = 'golpe-nombre';
+      btnBase.textContent = base;
+      btnBase.onclick = function(e) {
         e.stopPropagation();
-        const variantesDiv = this.nextElementSibling;
-        variantesDiv.classList.toggle('visible');
-      });
+        const panel = this.nextElementSibling;
+        panel.classList.toggle('visible');
+      };
 
-      // Contenedor de variantes
-      const variantesDiv = document.createElement('div');
-      variantesDiv.className = 'variantes-container';
+      const panel = document.createElement('div');
+      panel.className = 'variantes-container';
 
-      variantes.forEach(variante => {
+      variantes.forEach(v => {
         const btnVar = document.createElement('button');
         btnVar.className = 'variante-btn';
-        const total = (contadores[variante]?.propio || 0) + (contadores[variante]?.rival || 0);
-        btnVar.innerHTML = `${variante} <span class="badge" id="cont-${variante.replace(/\s/g, '_')}">${total}</span>`;
-        btnVar.addEventListener('click', (e) => {
+        const total = (contadores[v]?.propio || 0) + (contadores[v]?.rival || 0);
+        btnVar.innerHTML = `${v} <span class="badge" id="cont-${v.replace(/\s/g, '_')}">${total}</span>`;
+        btnVar.onclick = function(e) {
           e.stopPropagation();
-          registrarGolpe(variante);
-          // Ocultar el desplegable después de seleccionar (opcional)
-          variantesDiv.classList.remove('visible');
-        });
-        variantesDiv.appendChild(btnVar);
+          registrarGolpe(v);
+          panel.classList.remove('visible'); // Contraer tras seleccionar
+        };
+        panel.appendChild(btnVar);
       });
 
-      card.appendChild(btnGolpe);
-      card.appendChild(variantesDiv);
+      card.appendChild(btnBase);
+      card.appendChild(panel);
       container.appendChild(card);
     }
   }
 
-  function actualizarBadgeDeVariante(variante) {
-    const badge = document.getElementById(`cont-${variante.replace(/\s/g, '_')}`);
+  function actualizarBadgeDeVariante(v) {
+    const badge = document.getElementById(`cont-${v.replace(/\s/g, '_')}`);
     if (badge) {
-      const total = (contadores[variante]?.propio || 0) + (contadores[variante]?.rival || 0);
+      const total = (contadores[v]?.propio || 0) + (contadores[v]?.rival || 0);
       badge.textContent = total;
     }
   }
 
   function actualizarTodosLosContadoresVisuales() {
-    todasLasVariantes.forEach(variante => {
-      actualizarBadgeDeVariante(variante);
-    });
+    todasLasVariantes.forEach(v => actualizarBadgeDeVariante(v));
   }
 
   function reiniciarContadores() {
-    if (confirm('¿Reiniciar todo?')) {
-      contadores = {};
-      inicializarContadores();
-      eventos = [];
-      resultadosContador = { 'winner-propio': 0, 'out-propio': 0, 'winner-rival': 0, 'out-rival': 0 };
-      actualizarContadoresResultados();
-      guardarTodo();
-      document.getElementById('tablaEventos').innerHTML = '';
-      actualizarTodosLosContadoresVisuales();
-    }
+    if (!confirm('¿Reiniciar todo?')) return;
+    contadores = {};
+    inicializarContadores();
+    eventos = [];
+    resultadosContador = { 'winner-propio': 0, 'out-propio': 0, 'winner-rival': 0, 'out-rival': 0 };
+    actualizarContadoresResultados();
+    guardarTodo();
+    document.getElementById('tablaEventos').innerHTML = '';
+    actualizarTodosLosContadoresVisuales();
   }
 
   // ---------- PESTAÑAS ----------
-  function cambiarTab(tabId) {
-    document.getElementById('btnTabEventos').classList.remove('active');
-    document.getElementById('btnTabEstadisticas').classList.remove('active');
-    document.getElementById('btnTabHeatmap').classList.remove('active');
-    document.getElementById('tab-eventos').classList.remove('active');
-    document.getElementById('tab-estadisticas').classList.remove('active');
-    document.getElementById('tab-heatmap').classList.remove('active');
-
-    if (tabId === 'eventos') {
-      document.getElementById('btnTabEventos').classList.add('active');
-      document.getElementById('tab-eventos').classList.add('active');
-    } else if (tabId === 'estadisticas') {
-      document.getElementById('btnTabEstadisticas').classList.add('active');
-      document.getElementById('tab-estadisticas').classList.add('active');
-      generarEstadisticas();
-    } else if (tabId === 'heatmap') {
-      document.getElementById('btnTabHeatmap').classList.add('active');
-      document.getElementById('tab-heatmap').classList.add('active');
-      inicializarMapaCalor();
-    }
+  function cambiarTab(tab) {
+    ['eventos','estadisticas','heatmap'].forEach(t => {
+      document.getElementById(`btnTab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.remove('active');
+      document.getElementById(`tab-${t}`).classList.remove('active');
+    });
+    document.getElementById(`btnTab${tab.charAt(0).toUpperCase()+tab.slice(1)}`).classList.add('active');
+    document.getElementById(`tab-${tab}`).classList.add('active');
+    if (tab === 'estadisticas') generarEstadisticas();
+    if (tab === 'heatmap') inicializarMapaCalor();
   }
 
-  // ---------- MAPA DE CALOR (sin cambios) ----------
+  // ---------- MAPA DE CALOR (idéntico) ----------
   function inicializarMapaCalor() {
     const select = document.getElementById('heatmapGolpeSelect');
     select.innerHTML = '<option value="Todos">Todos los golpes</option>';
-    const golpesUnicos = [...new Set(eventos.map(e => e.tipo))].sort();
-    golpesUnicos.forEach(golpe => {
-      const option = document.createElement('option');
-      option.value = golpe;
-      option.textContent = golpe;
-      select.appendChild(option);
+    [...new Set(eventos.map(e => e.tipo))].sort().forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g;
+      opt.textContent = g;
+      select.appendChild(opt);
     });
     select.onchange = () => dibujarHeatmap(select.value);
     dibujarHeatmap('Todos');
   }
 
-  function dibujarHeatmap(filtroGolpe) {
+  function dibujarHeatmap(filtro) {
     const svg = document.getElementById('heatmapSvg');
-    svg.querySelectorAll('.zone-rect').forEach(el => el.remove());
-    svg.querySelectorAll('text').forEach(el => el.remove());
-
-    let eventosFiltrados = eventos.filter(e => e.zona !== null && e.zona !== undefined && e.zona !== '');
-    if (filtroGolpe !== 'Todos') {
-      eventosFiltrados = eventosFiltrados.filter(e => e.tipo === filtroGolpe);
-    }
-
+    svg.querySelectorAll('.zone-rect, text').forEach(el => el.remove());
+    let evs = eventos.filter(e => e.zona);
+    if (filtro !== 'Todos') evs = evs.filter(e => e.tipo === filtro);
     const conteo = {};
     zonasDisponibles.forEach(z => conteo[z] = 0);
-    eventosFiltrados.forEach(e => conteo[e.zona]++);
-
+    evs.forEach(e => conteo[e.zona]++);
     const max = Math.max(...Object.values(conteo), 1);
     const min = Math.min(...Object.values(conteo));
-
-    function getColor(valor) {
+    const getColor = (val) => {
       if (max === min) return '#95a5a6';
-      const ratio = (valor - min) / (max - min);
-      const r = Math.round(59 + ratio * (239 - 59));
+      const ratio = (val - min) / (max - min);
+      const r = Math.round(59 + ratio * 180);
       const g = Math.round(130 + ratio * (83 - 130));
       const b = Math.round(246 + ratio * (80 - 246));
       return `rgb(${r},${g},${b})`;
-    }
-
-    const zonasCoords = [
-      { zona: 'Red Izquierda', x: 30, y: 40, w: 113, h: 150 },
-      { zona: 'Red Centro', x: 144, y: 40, w: 112, h: 150 },
-      { zona: 'Red Derecha', x: 257, y: 40, w: 113, h: 150 },
-      { zona: 'Media Izquierda', x: 30, y: 190, w: 113, h: 70 },
-      { zona: 'Media Centro', x: 144, y: 190, w: 112, h: 70 },
-      { zona: 'Media Derecha', x: 257, y: 190, w: 113, h: 70 },
-      { zona: 'Fondo Izquierda', x: 30, y: 260, w: 113, h: 150 },
-      { zona: 'Fondo Centro', x: 144, y: 260, w: 112, h: 150 },
-      { zona: 'Fondo Derecha', x: 257, y: 260, w: 113, h: 150 }
+    };
+    const coords = [
+      ['Red Izquierda',30,40,113,150], ['Red Centro',144,40,112,150], ['Red Derecha',257,40,113,150],
+      ['Media Izquierda',30,190,113,70], ['Media Centro',144,190,112,70], ['Media Derecha',257,190,113,70],
+      ['Fondo Izquierda',30,260,113,150], ['Fondo Centro',144,260,112,150], ['Fondo Derecha',257,260,113,150]
     ];
-
-    zonasCoords.forEach(zc => {
-      const freq = conteo[zc.zona];
-      const fillColor = getColor(freq);
+    coords.forEach(([zona, x, y, w, h]) => {
+      const freq = conteo[zona];
       const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      rect.setAttribute('x', zc.x);
-      rect.setAttribute('y', zc.y);
-      rect.setAttribute('width', zc.w);
-      rect.setAttribute('height', zc.h);
-      rect.setAttribute('fill', fillColor);
-      rect.setAttribute('rx', '4');
-      rect.setAttribute('class', 'zone-rect');
+      rect.setAttribute('x', x); rect.setAttribute('y', y);
+      rect.setAttribute('width', w); rect.setAttribute('height', h);
+      rect.setAttribute('fill', getColor(freq));
+      rect.setAttribute('rx', '4'); rect.setAttribute('class', 'zone-rect');
       svg.appendChild(rect);
-
-      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
-      text.setAttribute('x', zc.x + zc.w/2);
-      text.setAttribute('y', zc.y + zc.h/2);
-      text.setAttribute('text-anchor', 'middle');
-      text.setAttribute('fill', freq > max/2 ? 'white' : 'black');
-      text.setAttribute('font-size', '12');
-      text.setAttribute('font-weight', 'bold');
-      text.textContent = `${zc.zona.split(' ')[0].substring(0,3)} ${freq}`;
-      svg.appendChild(text);
+      const txt = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      txt.setAttribute('x', x+w/2); txt.setAttribute('y', y+h/2);
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('fill', freq > max/2 ? 'white' : 'black');
+      txt.setAttribute('font-size', '11'); txt.setAttribute('font-weight', 'bold');
+      txt.textContent = `${zona.split(' ')[0].substring(0,3)} ${freq}`;
+      svg.appendChild(txt);
     });
   }
 
@@ -778,22 +719,21 @@
       <div class="summary-card" style="border-left:4px solid #ffc107"><h4>Puntos rival</h4><div class="number">${resultadosContador['winner-rival']}</div></div>
       <div class="summary-card" style="border-left:4px solid #6c757d"><h4>Errores rival</h4><div class="number">${resultadosContador['out-rival']}</div></div>
     `;
-
     if (chartGolpes) chartGolpes.destroy();
-    const ctx1 = document.getElementById('chartGolpes').getContext('2d');
+    const ctx = document.getElementById('chartGolpes').getContext('2d');
     const labels = todasLasVariantes;
-    const dataPropio = labels.map(v => contadores[v]?.propio || 0);
-    const dataRival = labels.map(v => contadores[v]?.rival || 0);
-    chartGolpes = new Chart(ctx1, {
+    const propio = labels.map(v => contadores[v]?.propio || 0);
+    const rival = labels.map(v => contadores[v]?.rival || 0);
+    chartGolpes = new Chart(ctx, {
       type: 'bar',
       data: {
         labels,
         datasets: [
-          { label: 'Propios', data: dataPropio, backgroundColor: 'rgba(54,162,235,0.7)' },
-          { label: 'Rival', data: dataRival, backgroundColor: 'rgba(255,99,132,0.7)' }
+          { label: 'Propios', data: propio, backgroundColor: 'rgba(54,162,235,0.7)' },
+          { label: 'Rival', data: rival, backgroundColor: 'rgba(255,99,132,0.7)' }
         ]
       },
-      options: { responsive: true, plugins: { title: { display: true, text: 'Golpes por tipo (todas las variantes)' } } }
+      options: { responsive: true, plugins: { title: { display: true, text: 'Golpes por variante' } } }
     });
   }
 
@@ -806,13 +746,12 @@
     descargarArchivo(JSON.stringify(eventos, null, 2), 'eventos.json', 'application/json');
   }
   function descargarArchivo(contenido, nombre, tipo) {
-    const blob = new Blob([contenido], { type: tipo });
-    const url = URL.createObjectURL(blob);
+    const blob = new Blob([contenido], { type });
     const a = document.createElement('a');
-    a.href = url;
+    a.href = URL.createObjectURL(blob);
     a.download = nombre;
     a.click();
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(a.href);
   }
 
   // ---------- INICIO ----------
