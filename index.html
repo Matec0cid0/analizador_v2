@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analizador de Bádminton v6 - Histórico</title>
+  <title>Analizador de Bádminton v7 - Informe de Jugador</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
     * { box-sizing: border-box; }
@@ -228,6 +228,7 @@
     <button id="btnTabEventos" class="tab-btn active" onclick="cambiarTab('eventos')">📋 Eventos</button>
     <button id="btnTabEstadisticas" class="tab-btn" onclick="cambiarTab('estadisticas')">📊 Estadísticas</button>
     <button id="btnTabTendencias" class="tab-btn" onclick="cambiarTab('tendencias')">📈 Tendencias</button>
+    <button id="btnTabInforme" class="tab-btn" onclick="cambiarTab('informe')">📋 Informe</button>
   </div>
 
   <div id="tab-eventos" class="tab-content active stats-panel">
@@ -262,6 +263,23 @@
     <div id="tendenciaResult" style="font-size:0.8rem;"></div>
     <div class="chart-container" style="max-width:400px;">
       <canvas id="chartTendencia" width="300" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- NUEVA PESTAÑA INFORME DE JUGADOR -->
+  <div id="tab-informe" class="tab-content stats-panel">
+    <h3>Informe de Jugador (histórico)</h3>
+    <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+      <label>Jugador:</label>
+      <select id="informeJugadorSelect"></select>
+      <button class="btn btn-sm btn-info" onclick="generarInforme()">Generar informe</button>
+    </div>
+    <div id="informeResult" style="font-size:0.8rem;"></div>
+    <div class="chart-container" style="max-width:400px;">
+      <canvas id="chartInformeTorta" width="300" height="200"></canvas>
+    </div>
+    <div class="chart-container" style="max-width:500px;">
+      <canvas id="chartInformeEfectividad" width="400" height="200"></canvas>
     </div>
   </div>
 </div>
@@ -338,17 +356,17 @@
   inicializarContadores();
 
   function guardarTodo() {
-    localStorage.setItem('contadoresBadmintonV6', JSON.stringify(contadores));
-    localStorage.setItem('eventosBadmintonV6', JSON.stringify(eventos));
+    localStorage.setItem('contadoresBadmintonV7', JSON.stringify(contadores));
+    localStorage.setItem('eventosBadmintonV7', JSON.stringify(eventos));
     localStorage.setItem('jugadoresBadminton', JSON.stringify(jugadores));
     localStorage.setItem('jugadorPropioBadminton', jugadorPropio);
     localStorage.setItem('jugadorRivalBadminton', jugadorRival);
   }
 
   function cargarTodo() {
-    const cont = JSON.parse(localStorage.getItem('contadoresBadmintonV6') || '{}');
+    const cont = JSON.parse(localStorage.getItem('contadoresBadmintonV7') || '{}');
     if (Object.keys(cont).length) contadores = cont;
-    const evts = JSON.parse(localStorage.getItem('eventosBadmintonV6') || '[]');
+    const evts = JSON.parse(localStorage.getItem('eventosBadmintonV7') || '[]');
     if (evts.length) {
       eventos = evts;
       document.getElementById('tablaEventos').innerHTML = '';
@@ -362,7 +380,7 @@
   cargarTodo();
 
   function cargarListaPartidos() {
-    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV6') || '[]');
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV7') || '[]');
     const sel = document.getElementById('listaPartidos');
     sel.innerHTML = '<option value="">-- Partidos --</option>';
     partidos.forEach((p,i) => { const o = document.createElement('option'); o.value = i; o.textContent = p.nombre; sel.appendChild(o); });
@@ -371,16 +389,16 @@
   function guardarPartido() {
     const nombre = prompt('Nombre:');
     if (!nombre) return;
-    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV6') || '[]');
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV7') || '[]');
     partidos.push({ nombre, fecha: new Date().toLocaleString(), videoUrl: document.getElementById('urlInput').value, jugadores, jugadorPropio, jugadorRival, contadores: JSON.parse(JSON.stringify(contadores)), eventos: JSON.parse(JSON.stringify(eventos)), resultadosContador: {...resultadosContador} });
-    localStorage.setItem('partidosBadmintonV6', JSON.stringify(partidos));
+    localStorage.setItem('partidosBadmintonV7', JSON.stringify(partidos));
     cargarListaPartidos(); alert('Guardado.');
   }
 
   function cargarPartido() {
     const idx = document.getElementById('listaPartidos').value;
     if (idx==='') return;
-    const partido = JSON.parse(localStorage.getItem('partidosBadmintonV6') || '[]')[parseInt(idx)];
+    const partido = JSON.parse(localStorage.getItem('partidosBadmintonV7') || '[]')[parseInt(idx)];
     if (!partido) return;
     jugadores = partido.jugadores || [];
     jugadorPropio = partido.jugadorPropio || '';
@@ -552,7 +570,7 @@
   }
 
   function cambiarTab(tab) {
-    ['eventos','estadisticas','tendencias'].forEach(t => {
+    ['eventos','estadisticas','tendencias','informe'].forEach(t => {
       document.getElementById(`btnTab${t.charAt(0).toUpperCase()+t.slice(1)}`).classList.remove('active');
       document.getElementById(`tab-${t}`).classList.remove('active');
     });
@@ -560,27 +578,21 @@
     document.getElementById(`tab-${tab}`).classList.add('active');
     if (tab==='estadisticas') generarEstadisticas();
     if (tab==='tendencias') inicializarTendencias();
+    if (tab==='informe') inicializarInforme();
   }
 
   // ---------- TENDENCIAS (con histórico) ----------
   let chartTendencia;
 
   function inicializarTendencias() {
-    // Llenar golpes base
     const selectGolpe = document.getElementById('tendenciaGolpeSelect');
     const bases = [...new Set(todasLasVariantes.map(v => v.split(' ').slice(0, -1).join(' ')))].sort();
     selectGolpe.innerHTML = '';
     bases.forEach(b => { const opt = document.createElement('option'); opt.value = b; opt.textContent = b; selectGolpe.appendChild(opt); });
 
-    // Llenar jugadores para histórico
     const selectJugador = document.getElementById('tendenciaJugadorSelect');
     selectJugador.innerHTML = '<option value="">-- Solo partido actual --</option>';
-    jugadores.forEach(j => {
-      const opt = document.createElement('option');
-      opt.value = j;
-      opt.textContent = j;
-      selectJugador.appendChild(opt);
-    });
+    jugadores.forEach(j => { const opt = document.createElement('option'); opt.value = j; opt.textContent = j; selectJugador.appendChild(opt); });
 
     selectGolpe.onchange = () => mostrarTendencia(selectGolpe.value);
     selectJugador.onchange = () => mostrarTendencia(selectGolpe.value);
@@ -589,8 +601,8 @@
   }
 
   function obtenerContadoresHistoricos(jugador) {
-    if (!jugador) return null; // null = usar contadores del partido actual
-    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV6') || '[]');
+    if (!jugador) return null;
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV7') || '[]');
     const acumulado = {};
     partidos.forEach(p => {
       if ((p.jugadorPropio === jugador || p.jugadorRival === jugador) && p.contadores) {
@@ -636,10 +648,140 @@
           backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6c757d', '#007bff']
         }]
       },
-      options: {
-        responsive: true,
-        plugins: { title: { display: true, text: `Distribución de ${base} ${jugadorHistorico ? '(' + jugadorHistorico + ')' : ''}` } }
+      options: { responsive: true, plugins: { title: { display: true, text: `Distribución de ${base}` } } }
+    });
+  }
+
+  // ---------- NUEVO: INFORME DE JUGADOR ----------
+  let chartInformeTorta, chartInformeEfectividad;
+
+  function inicializarInforme() {
+    const select = document.getElementById('informeJugadorSelect');
+    select.innerHTML = '';
+    jugadores.forEach(j => {
+      const opt = document.createElement('option');
+      opt.value = j;
+      opt.textContent = j;
+      select.appendChild(opt);
+    });
+    if (jugadores.length) select.value = jugadores[0];
+    document.getElementById('informeResult').innerHTML = '';
+    if (chartInformeTorta) chartInformeTorta.destroy();
+    if (chartInformeEfectividad) chartInformeEfectividad.destroy();
+  }
+
+  function generarInforme() {
+    const jugador = document.getElementById('informeJugadorSelect').value;
+    if (!jugador) return alert('Selecciona un jugador.');
+
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV7') || '[]');
+    let totalGolpes = 0;
+    const conteoBase = {}; // { base: total }
+    const conteoVariante = {}; // { variante: total }
+    const efectividad = { winners: 0, errores: 0 }; // según su rol
+
+    partidos.forEach(p => {
+      if (p.jugadorPropio === jugador || p.jugadorRival === jugador) {
+        const eventosPartido = p.eventos || [];
+        eventosPartido.forEach(ev => {
+          if (ev.jugador !== jugador) return;
+          totalGolpes++;
+          const base = ev.tipo.split(' ').slice(0, -1).join(' ');
+          conteoBase[base] = (conteoBase[base] || 0) + 1;
+          conteoVariante[ev.tipo] = (conteoVariante[ev.tipo] || 0) + 1;
+
+          // Determinar resultado según si era propio o rival en ese partido
+          if (p.jugadorPropio === jugador) {
+            if (ev.result === 'winner-propio') efectividad.winners++;
+            if (ev.result === 'out-propio') efectividad.errores++;
+          } else {
+            if (ev.result === 'winner-rival') efectividad.winners++;
+            if (ev.result === 'out-rival') efectividad.errores++;
+          }
+        });
       }
+    });
+
+    if (totalGolpes === 0) {
+      document.getElementById('informeResult').innerHTML = '<p>No hay datos para este jugador.</p>';
+      return;
+    }
+
+    // Construir resumen HTML
+    let html = `<h4>Resumen de ${jugador}</h4>`;
+    html += `<p><strong>Total de golpes analizados:</strong> ${totalGolpes}</p>`;
+    html += `<p><strong>Efectividad:</strong> ${efectividad.winners} winners (${((efectividad.winners/totalGolpes)*100).toFixed(1)}%) | ${efectividad.errores} errores (${((efectividad.errores/totalGolpes)*100).toFixed(1)}%)</p>`;
+    html += `<h4>Distribución de golpes base</h4><ul>`;
+    const basesOrdenadas = Object.entries(conteoBase).sort((a,b) => b[1] - a[1]);
+    basesOrdenadas.forEach(([base, total]) => {
+      const pct = ((total / totalGolpes) * 100).toFixed(1);
+      html += `<li>${base}: ${total} (${pct}%)</li>`;
+    });
+    html += `</ul>`;
+
+    // Frase automática
+    if (basesOrdenadas.length > 0) {
+      const favorito = basesOrdenadas[0];
+      let frase = `El golpe más frecuente de ${jugador} es el ${favorito[0]} (${((favorito[1]/totalGolpes)*100).toFixed(1)}% de sus acciones). `;
+      if (efectividad.winners + efectividad.errores > 0) {
+        const efectividadPct = ((efectividad.winners / (efectividad.winners + efectividad.errores || 1)) * 100).toFixed(1);
+        frase += `Su índice de winners/errores es del ${efectividadPct}%. `;
+      }
+      html += `<p style="margin-top:10px; padding:8px; background:#f8f9fa; border-left:4px solid #007bff;"><strong>📌 Análisis táctico:</strong> ${frase}</p>`;
+    }
+    document.getElementById('informeResult').innerHTML = html;
+
+    // Gráfico de torta de golpes base
+    if (chartInformeTorta) chartInformeTorta.destroy();
+    const ctx1 = document.getElementById('chartInformeTorta').getContext('2d');
+    chartInformeTorta = new Chart(ctx1, {
+      type: 'pie',
+      data: {
+        labels: basesOrdenadas.map(b => b[0]),
+        datasets: [{
+          data: basesOrdenadas.map(b => b[1]),
+          backgroundColor: ['#28a745', '#dc3545', '#ffc107', '#17a2b8', '#6c757d', '#007bff', '#6610f2', '#fd7e14', '#20c997']
+        }]
+      },
+      options: { responsive: true, plugins: { title: { display: true, text: 'Distribución de golpes base' } } }
+    });
+
+    // Gráfico de efectividad por golpe base (winners vs errores)
+    const efectividadPorBase = {};
+    basesOrdenadas.forEach(([base]) => { efectividadPorBase[base] = { winners:0, errores:0 }; });
+    partidos.forEach(p => {
+      if (p.jugadorPropio === jugador || p.jugadorRival === jugador) {
+        (p.eventos || []).forEach(ev => {
+          if (ev.jugador !== jugador) return;
+          const base = ev.tipo.split(' ').slice(0, -1).join(' ');
+          if (!efectividadPorBase[base]) efectividadPorBase[base] = { winners:0, errores:0 };
+          if (p.jugadorPropio === jugador) {
+            if (ev.result === 'winner-propio') efectividadPorBase[base].winners++;
+            if (ev.result === 'out-propio') efectividadPorBase[base].errores++;
+          } else {
+            if (ev.result === 'winner-rival') efectividadPorBase[base].winners++;
+            if (ev.result === 'out-rival') efectividadPorBase[base].errores++;
+          }
+        });
+      }
+    });
+
+    const labelsEf = Object.keys(efectividadPorBase);
+    const dataWinners = labelsEf.map(b => efectividadPorBase[b].winners);
+    const dataErrores = labelsEf.map(b => efectividadPorBase[b].errores);
+
+    if (chartInformeEfectividad) chartInformeEfectividad.destroy();
+    const ctx2 = document.getElementById('chartInformeEfectividad').getContext('2d');
+    chartInformeEfectividad = new Chart(ctx2, {
+      type: 'bar',
+      data: {
+        labels: labelsEf,
+        datasets: [
+          { label: 'Winners', data: dataWinners, backgroundColor: '#28a745' },
+          { label: 'Errores', data: dataErrores, backgroundColor: '#dc3545' }
+        ]
+      },
+      options: { responsive: true, plugins: { title: { display: true, text: 'Efectividad por golpe base' } }, scales: { x: { stacked: true }, y: { stacked: true } } }
     });
   }
 
