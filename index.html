@@ -3,39 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analizador de Bádminton v4 - Layout compacto</title>
+  <title>Analizador de Bádminton v5 - Zona automática</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
     * { box-sizing: border-box; }
     body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 8px; background: #f0f2f5; font-size: 0.85rem; }
 
-    /* --- LAYOUT PRINCIPAL --- */
     .main-layout {
-      display: flex;
-      gap: 12px;
-      max-width: 1400px;
-      margin: auto;
-      align-items: flex-start;
+      display: flex; gap: 12px; max-width: 1400px; margin: auto; align-items: flex-start;
     }
     .video-column {
-      flex: 2.2; /* se lleva el 60-65% del ancho */
-      min-width: 0;
+      flex: 2.2; min-width: 0;
     }
     .controls-column {
-      flex: 1.2;
-      min-width: 320px;
-      background: #fff;
-      border-radius: 10px;
-      padding: 10px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      max-height: calc(100vh - 30px);
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
+      flex: 1.2; min-width: 320px; background: #fff; border-radius: 10px;
+      padding: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      max-height: calc(100vh - 30px); overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
     }
 
-    /* --- REPRODUCTOR --- */
     #player-wrapper {
       position: relative; width: 100%; padding-bottom: 56.25%; background: #000;
       border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -61,7 +46,6 @@
     .loading-msg { color: #6c757d; margin-left: 6px; font-size: 0.8rem; display: none; }
     .error-msg { color: red; margin-left: 6px; font-size: 0.8rem; display: none; }
 
-    /* --- CONTROLES (jugadores, toggle, etc.) --- */
     .controls-inner {
       display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
     }
@@ -88,7 +72,6 @@
       font-size: 0.65rem; margin-left: 2px;
     }
 
-    /* --- GOLPES --- */
     .zona-golpes { margin-bottom: 8px; }
     .zona-titulo {
       font-size: 0.9rem; font-weight: bold; margin: 0 0 4px; color: #333;
@@ -125,7 +108,6 @@
       font-size: 0.6rem;
     }
 
-    /* --- TABS Y PANELES INFERIORES --- */
     .bottom-section {
       max-width: 1400px; margin: 15px auto 0;
     }
@@ -177,7 +159,6 @@
     .legend-item { display: flex; align-items: center; gap: 3px; font-size: 0.7rem; }
     .legend-color { width: 16px; height: 16px; border-radius: 3px; }
 
-    /* Responsive: apilar en pantallas pequeñas */
     @media (max-width: 850px) {
       .main-layout { flex-direction: column; }
       .controls-column { max-height: none; overflow-y: visible; }
@@ -203,7 +184,7 @@
   <!-- COLUMNA DERECHA: CONTROLES Y GOLPES -->
   <div class="controls-column">
 
-    <!-- Gestión de partidos (opcional, pequeño) -->
+    <!-- Gestión de partidos -->
     <div style="display: flex; gap:4px;">
       <button class="btn btn-sm btn-info" onclick="guardarPartido()">💾</button>
       <select id="listaPartidos" style="flex:1; min-width:100px; font-size:0.7rem;">
@@ -213,7 +194,7 @@
       <button class="btn btn-sm btn-danger" onclick="nuevoPartido()">📝</button>
     </div>
 
-    <!-- Jugadores y toggle -->
+    <!-- Jugadores, toggle y lateralidad -->
     <div class="controls-inner">
       <div class="jugador-selector">
         <label style="font-size:0.7rem;"><strong>Propio:</strong></label>
@@ -230,6 +211,7 @@
         <button id="toggleRival" class="toggle-btn toggle-inactivo" onclick="cambiarEjecutor('rival')">Riv.</button>
       </div>
       <button class="btn btn-sm btn-warning" onclick="reiniciarContadores()">🔄</button>
+      <button id="btnMano" class="btn btn-sm btn-info" onclick="toggleMano()">Mano: Diestro</button>
     </div>
 
     <!-- Resultados -->
@@ -248,7 +230,7 @@
       </button>
     </div>
 
-    <!-- Golpes agrupados por zona (idéntico a v3) -->
+    <!-- Golpes agrupados por zona (se generan con JS) -->
     <div id="golpesContainer"></div>
   </div>
 
@@ -266,7 +248,7 @@
     <h3>Eventos registrados</h3>
     <p style="font-size:0.7rem;">Clic en el tiempo → retrocede 2 seg.</p>
     <table class="table-events">
-      <thead><tr><th>Ejec.</th><th>Tiempo</th><th>Golpe</th><th>Resultado</th><th>Zona</th></tr></thead>
+      <thead><tr><th>Ejec.</th><th>Tiempo</th><th>Golpe</th><th>Resultado</th><th>Zona (auto)</th></tr></thead>
       <tbody id="tablaEventos"></tbody>
     </table>
   </div>
@@ -282,9 +264,9 @@
   </div>
 
   <div id="tab-heatmap" class="tab-content stats-panel">
-    <h3>Mapa de Calor</h3>
+    <h3>Mapa de Calor por Golpe</h3>
     <div class="heatmap-selector">
-      <label>Filtrar: </label>
+      <label>Filtrar por golpe base: </label>
       <select id="heatmapGolpeSelect"><option value="Todos">Todos</option></select>
     </div>
     <div class="heatmap-container">
@@ -309,7 +291,11 @@
 </div>
 
 <script>
-  // ---------- GOLPES AGRUPADOS POR ZONA (MISMA LISTA DE V3) ----------
+  // ---------- CONFIGURACIÓN DE GOLPES Y ZONAS ----------
+  // manoActual: 'diestro' o 'zurdo'
+  let manoActual = 'diestro';
+
+  // Mapa de zonas según golpe (para diestro). Para zurdo se invierten izquierda/derecha.
   const golpesPorZona = {
     'Fondo': {
       'Drop': ['Drop Drive Paralelo', 'Drop Drive Cruzado', 'Drop Rectificado Paralelo', 'Drop Rectificado Cruzado'],
@@ -331,10 +317,51 @@
     }
   };
 
+  // Asignación de zona automática según el golpe (versión diestro)
+  const zonaPorGolpe = {
+    // Fondo
+    'Drop Drive Paralelo': 'Fondo Derecha', 'Drop Drive Cruzado': 'Fondo Derecha',
+    'Drop Rectificado Paralelo': 'Fondo Izquierda', 'Drop Rectificado Cruzado': 'Fondo Izquierda',
+    'Smash Drive Paralelo': 'Fondo Derecha', 'Smash Drive Cruzado': 'Fondo Derecha',
+    'Smash Rectificado Paralelo': 'Fondo Izquierda', 'Smash Rectificado Cruzado': 'Fondo Izquierda',
+    'Stick Smash Drive Paralelo': 'Fondo Derecha', 'Stick Smash Drive Cruzado': 'Fondo Derecha',
+    'Stick Smash Rectificado Paralelo': 'Fondo Izquierda', 'Stick Smash Rectificado Cruzado': 'Fondo Izquierda',
+    'Clear Drive Paralelo': 'Fondo Derecha', 'Clear Drive Cruzado': 'Fondo Derecha',
+    'Clear Rectificado Paralelo': 'Fondo Izquierda', 'Clear Rectificado Cruzado': 'Fondo Izquierda',
+    'Reves Drop Paralelo': 'Fondo Izquierda', 'Reves Drop Cruzado': 'Fondo Izquierda',
+    'Reves Clear Paralelo': 'Fondo Izquierda', 'Reves Clear Cruzado': 'Fondo Izquierda',
+    'Barrido Drive Paralelo': 'Fondo Derecha', 'Barrido Drive Cruzado': 'Fondo Derecha',
+    'Barrido Reves Paralelo': 'Fondo Izquierda', 'Barrido Reves Cruzado': 'Fondo Izquierda',
+    // Mitad
+    'Defensa Drive Paralelo': 'Medio Derecha', 'Defensa Drive Cruzada': 'Medio Derecha',
+    'Defensa Reves Paralela': 'Medio Izquierda', 'Defensa Reves Cruzada': 'Medio Izquierda',
+    'Bloqueo Drive Paralelo': 'Medio Derecha', 'Bloqueo Drive Cruzado': 'Medio Derecha',
+    'Bloqueo Reves Paralelo': 'Medio Izquierda', 'Bloqueo Reves Cruzado': 'Medio Izquierda',
+    'Lift Drive Paralelo': 'Medio Derecha', 'Lift Drive Cruzado': 'Medio Derecha',
+    'Lift Reves Paralelo': 'Medio Izquierda', 'Lift Reves Cruzado': 'Medio Izquierda',
+    // Red
+    'Lob Drive Paralelo': 'Red Derecha', 'Lob Drive Cruzado': 'Red Derecha',
+    'Lob Reves Paralelo': 'Red Izquierda', 'Lob Reves Cruzado': 'Red Izquierda',
+    'Dejada Drive Paralela': 'Red Derecha', 'Dejada Drive Cruzada': 'Red Derecha',
+    'Dejada Reves Paralela': 'Red Izquierda', 'Dejada Reves Cruzada': 'Red Izquierda',
+    'Kill Drive Paralela': 'Red Derecha', 'Kill Drive Cruzada': 'Red Derecha',
+    'Kill Reves Paralela': 'Red Izquierda', 'Kill Reves Cruzada': 'Red Izquierda'
+  };
+
+  // Función para obtener la zona efectiva según la mano
+  function obtenerZona(golpe) {
+    const zona = zonaPorGolpe[golpe] || '';
+    if (manoActual === 'diestro') return zona;
+    // Invertir izquierda/derecha para zurdos
+    if (zona.includes('Izquierda')) return zona.replace('Izquierda', 'Derecha');
+    if (zona.includes('Derecha')) return zona.replace('Derecha', 'Izquierda');
+    return zona;
+  }
+
   const todasLasVariantes = Object.values(golpesPorZona).flatMap(z => Object.values(z).flat());
   const zonasDisponibles = [
     'Red Izquierda', 'Red Centro', 'Red Derecha',
-    'Media Izquierda', 'Media Centro', 'Media Derecha',
+    'Medio Izquierda', 'Medio Centro', 'Medio Derecha',
     'Fondo Izquierda', 'Fondo Centro', 'Fondo Derecha'
   ];
 
@@ -349,17 +376,17 @@
   inicializarContadores();
 
   function guardarTodo() {
-    localStorage.setItem('contadoresBadmintonV4', JSON.stringify(contadores));
-    localStorage.setItem('eventosBadmintonV4', JSON.stringify(eventos));
+    localStorage.setItem('contadoresBadmintonV5', JSON.stringify(contadores));
+    localStorage.setItem('eventosBadmintonV5', JSON.stringify(eventos));
     localStorage.setItem('jugadoresBadminton', JSON.stringify(jugadores));
     localStorage.setItem('jugadorPropioBadminton', jugadorPropio);
     localStorage.setItem('jugadorRivalBadminton', jugadorRival);
   }
 
   function cargarTodo() {
-    const cont = JSON.parse(localStorage.getItem('contadoresBadmintonV4') || '{}');
+    const cont = JSON.parse(localStorage.getItem('contadoresBadmintonV5') || '{}');
     if (Object.keys(cont).length) contadores = cont;
-    const evts = JSON.parse(localStorage.getItem('eventosBadmintonV4') || '[]');
+    const evts = JSON.parse(localStorage.getItem('eventosBadmintonV5') || '[]');
     if (evts.length) {
       eventos = evts;
       document.getElementById('tablaEventos').innerHTML = '';
@@ -373,7 +400,7 @@
   cargarTodo();
 
   function cargarListaPartidos() {
-    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV4') || '[]');
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV5') || '[]');
     const sel = document.getElementById('listaPartidos');
     sel.innerHTML = '<option value="">-- Partidos --</option>';
     partidos.forEach((p,i) => { const o = document.createElement('option'); o.value = i; o.textContent = p.nombre; sel.appendChild(o); });
@@ -382,16 +409,16 @@
   function guardarPartido() {
     const nombre = prompt('Nombre:');
     if (!nombre) return;
-    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV4') || '[]');
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV5') || '[]');
     partidos.push({ nombre, fecha: new Date().toLocaleString(), videoUrl: document.getElementById('urlInput').value, jugadores, jugadorPropio, jugadorRival, contadores: JSON.parse(JSON.stringify(contadores)), eventos: JSON.parse(JSON.stringify(eventos)), resultadosContador: {...resultadosContador} });
-    localStorage.setItem('partidosBadmintonV4', JSON.stringify(partidos));
+    localStorage.setItem('partidosBadmintonV5', JSON.stringify(partidos));
     cargarListaPartidos(); alert('Guardado.');
   }
 
   function cargarPartido() {
     const idx = document.getElementById('listaPartidos').value;
     if (idx==='') return;
-    const partido = JSON.parse(localStorage.getItem('partidosBadmintonV4') || '[]')[parseInt(idx)];
+    const partido = JSON.parse(localStorage.getItem('partidosBadmintonV5') || '[]')[parseInt(idx)];
     if (!partido) return;
     jugadores = partido.jugadores || [];
     jugadorPropio = partido.jugadorPropio || '';
@@ -459,6 +486,20 @@
     document.getElementById('toggleRival').className = `toggle-btn ${ej==='rival'?'toggle-activo':'toggle-inactivo'}`;
   }
 
+  // ---------- LATERALIDAD ----------
+  function toggleMano() {
+    manoActual = manoActual === 'diestro' ? 'zurdo' : 'diestro';
+    document.getElementById('btnMano').textContent = `Mano: ${manoActual.charAt(0).toUpperCase()+manoActual.slice(1)}`;
+    // Actualizar las zonas en la tabla de eventos para reflejar el cambio
+    document.getElementById('tablaEventos').innerHTML = '';
+    eventos.forEach((e, i) => {
+      e.zona = obtenerZona(e.tipo); // recalcular con la nueva mano
+      agregarFilaTabla(i, e);
+    });
+    guardarTodo();
+  }
+
+  // ---------- REGISTRO DE GOLPES ----------
   function registrarGolpe(variante) {
     if (!iframe?.src) return alert('Carga un video.');
     const jugador = ejecutorActual==='propio'?jugadorPropio:jugadorRival;
@@ -468,7 +509,9 @@
     if (!contadores[variante]) contadores[variante] = { propio:0, rival:0 };
     contadores[variante][ejecutorActual]++;
     guardarTodo(); actualizarBadgeDeVariante(variante);
-    const evento = { jugador, tiempo, tipo: variante, ejecutor: ejecutorActual, result: null, zona: null };
+
+    const zona = obtenerZona(variante); // Asignación automática
+    const evento = { jugador, tiempo, tipo: variante, ejecutor: ejecutorActual, result: null, zona };
     eventos.push(evento);
     agregarFilaTabla(eventos.length-1, evento);
     guardarTodo();
@@ -478,19 +521,14 @@
     const tbody = document.getElementById('tablaEventos');
     const fila = tbody.insertRow(); fila.id = `row-${index}`;
     const m = Math.floor(ev.tiempo/60), s = Math.floor(ev.tiempo%60);
-    let zonas = zonasDisponibles.map(z => `<option value="${z}" ${ev.zona===z?'selected':''}>${z}</option>`).join('');
-    zonas = '<option value="">--</option>' + zonas;
     fila.innerHTML = `
       <td>${ev.jugador} (${ev.ejecutor==='propio'?'N':'R'})</td>
       <td class="tiempo-cell" data-tiempo="${ev.tiempo}">${m}:${s.toString().padStart(2,'0')}</td>
       <td>${ev.tipo}</td>
       <td class="result-cell">${ev.result ? `<span class="result-badge result-${ev.result}">${ev.result.replace('-',' ')}</span>` : ''}</td>
-      <td><select class="zona-select" data-index="${index}">${zonas}</select></td>
+      <td>${ev.zona || ''}</td>
     `;
     fila.querySelector('.tiempo-cell').onclick = () => seekTo(Math.max(0, ev.tiempo-2));
-    fila.querySelector('.zona-select').onchange = function() {
-      eventos[parseInt(this.dataset.index)].zona = this.value || null; guardarTodo();
-    };
   }
 
   function actualizarFilaResultado(index, result) {
@@ -566,19 +604,29 @@
     if (tab==='heatmap') inicializarMapaCalor();
   }
 
+  // ---------- MAPA DE CALOR (ahora por dirección) ----------
   function inicializarMapaCalor() {
     const select = document.getElementById('heatmapGolpeSelect');
     select.innerHTML = '<option value="Todos">Todos</option>';
-    [...new Set(eventos.map(e=>e.tipo))].sort().forEach(g => { const o = document.createElement('option'); o.value=g; o.textContent=g; select.appendChild(o); });
+    // Extraer golpes base (sin dirección) para el filtro
+    const bases = [...new Set(eventos.map(e => e.tipo.split(' ').slice(0, -1).join(' ')))].sort();
+    bases.forEach(b => {
+      const o = document.createElement('option'); o.value = b; o.textContent = b; select.appendChild(o);
+    });
     select.onchange = () => dibujarHeatmap(select.value);
     dibujarHeatmap('Todos');
   }
 
-  function dibujarHeatmap(filtro) {
+  function dibujarHeatmap(filtroBase) {
     const svg = document.getElementById('heatmapSvg'); svg.querySelectorAll('.zone-rect, text').forEach(el=>el.remove());
-    let evs = eventos.filter(e=>e.zona);
-    if (filtro!=='Todos') evs = evs.filter(e=>e.tipo===filtro);
-    const conteo = {}; zonasDisponibles.forEach(z=>conteo[z]=0); evs.forEach(e=>conteo[e.zona]++);
+    let evs = eventos;
+    if (filtroBase !== 'Todos') {
+      evs = evs.filter(e => e.tipo.startsWith(filtroBase));
+    }
+    // Contar por zona (la zona automática ya viene en el evento)
+    const conteo = {};
+    zonasDisponibles.forEach(z => conteo[z] = 0);
+    evs.forEach(e => { if (e.zona) conteo[e.zona]++; });
     const max = Math.max(...Object.values(conteo),1), min = Math.min(...Object.values(conteo));
     const getColor = (val) => {
       if (max===min) return '#95a5a6';
@@ -588,7 +636,7 @@
     };
     const coords = [
       ['Red Izquierda',30,40,113,150],['Red Centro',144,40,112,150],['Red Derecha',257,40,113,150],
-      ['Media Izquierda',30,190,113,70],['Media Centro',144,190,112,70],['Media Derecha',257,190,113,70],
+      ['Medio Izquierda',30,190,113,70],['Medio Centro',144,190,112,70],['Medio Derecha',257,190,113,70],
       ['Fondo Izquierda',30,260,113,150],['Fondo Centro',144,260,112,150],['Fondo Derecha',257,260,113,150]
     ];
     coords.forEach(([zona,x,y,w,h])=>{
@@ -606,6 +654,7 @@
     });
   }
 
+  // ---------- ESTADÍSTICAS ----------
   let chartGolpes;
   function generarEstadisticas() {
     document.getElementById('summaryCards').innerHTML = `
