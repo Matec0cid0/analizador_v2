@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analizador de Bádminton v2 - Desplegables</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; }
+    .container { max-width: 1300px; margin: auto; }
+
+    .player-section { margin-bottom: 10px; }
+    #player-wrapper {
+      position: relative; width: 100%; padding-bottom: 56.25%; background: #000;
+      border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    #player-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
+
+    .controls-bar {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      margin: 10px 0; background: white; padding: 10px; border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .controls-bar input { flex: 1; min-width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+    .btn {
+      padding: 8px 14px; background: #007bff; color: white; border: none; border-radius: 5px;
+      cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap; font-size: 0.9rem;
+    }
+    .btn:hover { background: #0056b3; }
+    .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+    .btn-success { background: #28a745; } .btn-success:hover { background: #1e7e34; }
+    .btn-danger { background: #dc3545; } .btn-danger:hover { background: #a71d2a; }
+    .btn-warning { background: #ffc107; color: #212529; } .btn-warning:hover { background: #d39e00; }
+    .btn-info { background: #17a2b8; } .btn-info:hover { background: #117a8b; }
+    .btn-dark { background: #343a40; } .btn-dark:hover { background: #1d2124; }
+
+    .jugador-selector { display: flex; align-items: center; gap: 8px; }
+    .jugador-selector select { padding: 6px; border-radius: 5px; border: 1px solid #ccc; }
+
+    .toggle-ejecutor { display: flex; gap: 8px; align-items: center; }
+    .toggle-btn { padding: 6px 12px; border-radius: 16px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
+    .toggle-activo { background: #007bff; color: white; }
+    .toggle-inactivo { background: #e9ecef; color: #333; }
+
+    .result-row {
+      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+      background: white; padding: 10px; border-radius: 8px; margin: 10px 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    }
+    .btn-result {
+      padding: 8px 12px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer;
+      font-size: 0.85rem; transition: 0.2s; display: flex; align-items: center; gap: 6px;
+    }
+    .btn-winner-propio { background: #d4edda; color: #155724; border: 2px solid #28a745; }
+    .btn-winner-propio:hover { background: #28a745; color: white; }
+    .btn-out-propio { background: #f8d7da; color: #721c24; border: 2px solid #dc3545; }
+    .btn-out-propio:hover { background: #dc3545; color: white; }
+    .btn-winner-rival { background: #fff3cd; color: #856404; border: 2px solid #ffc107; }
+    .btn-winner-rival:hover { background: #ffc107; color: #212529; }
+    .btn-out-rival { background: #e2e3e5; color: #383d41; border: 2px solid #6c757d; }
+    .btn-out-rival:hover { background: #6c757d; color: white; }
+    .result-counter {
+      background: rgba(0,0,0,0.1); border-radius: 10px; padding: 2px 8px;
+      font-size: 0.8rem; margin-left: 4px;
+    }
+
+    /* NUEVO: estilos para golpes desplegables */
+    .golpes-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;
+      margin: 15px 0;
+    }
+    .golpe-card {
+      background: white; border-radius: 8px; padding: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .golpe-nombre {
+      font-weight: bold; font-size: 0.9rem; margin-bottom: 6px; text-align: center;
+      padding: 6px; background: #007bff; color: white; border-radius: 4px;
+      cursor: pointer; user-select: none;
+    }
+    .golpe-nombre:hover { background: #0056b3; }
+    .variantes-container {
+      display: none; /* oculto por defecto */
+      flex-direction: column; gap: 4px;
+    }
+    .variantes-container.visible { display: flex; }
+    .variante-btn {
+      padding: 6px; border: 1px solid #ddd; border-radius: 4px;
+      background: #f8f9fa; cursor: pointer; font-size: 0.8rem;
+      position: relative; text-align: center;
+    }
+    .variante-btn:hover { background: #e2e6ea; }
+    .variante-btn .badge {
+      position: absolute; top: -6px; right: -6px; background: #333; color: white;
+      border-radius: 50%; width: 20px; height: 20px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem;
+    }
+
+    .stats-panel {
+      background: white; border-radius: 10px; padding: 15px; margin-top: 10px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .table-events { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.85rem; }
+    .table-events th, .table-events td { border: 1px solid #dee2e6; padding: 6px; text-align: left; }
+    .table-events th { background: #e9ecef; }
+    .table-events td.tiempo-cell { cursor: pointer; color: #007bff; text-decoration: underline; }
+    .table-events td.tiempo-cell:hover { color: #0056b3; }
+
+    .hidden { display: none !important; }
+    .loading-msg { color: #6c757d; margin-left: 10px; font-size: 0.85rem; }
+
+    .result-badge { padding: 2px 6px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; }
+    .result-winner-propio { background: #d4edda; color: #155724; }
+    .result-out-propio { background: #f8d7da; color: #721c24; }
+    .result-winner-rival { background: #fff3cd; color: #856404; }
+    .result-out-rival { background: #e2e3e5; color: #383d41; }
+
+    .tabs { display: flex; gap: 5px; margin: 10px 0 0 0; }
+    .tab-btn {
+      padding: 8px 14px; background: #e9ecef; border: none; border-radius: 6px 6px 0 0;
+      cursor: pointer; font-weight: bold; font-size: 0.85rem;
+    }
+    .tab-btn.active { background: #007bff; color: white; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .chart-container { width: 100%; max-width: 500px; margin: 15px auto; }
+    canvas { width: 100%; height: auto; }
+    .export-btns { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; }
+
+    .summary-cards { display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+    .summary-card {
+      flex: 1; min-width: 120px; background: white; border-radius: 8px;
+      padding: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .summary-card h4 { margin: 0 0 6px 0; font-size: 0.8rem; }
+    .summary-card .number { font-size: 1.8rem; font-weight: bold; }
+
+    .heatmap-container { display: flex; flex-direction: column; align-items: center; }
+    .heatmap-selector { margin-bottom: 15px; }
+    .heatmap-svg { width: 100%; max-width: 400px; height: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .zone-rect { transition: fill 0.3s; cursor: pointer; }
+    .zone-rect:hover { stroke: black; stroke-width: 2; }
+    .legend { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; }
+    .legend-color { width: 20px; height: 20px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Reproductor -->
+  <div class="player-section">
+    <div id="player-wrapper">
+      <iframe id="youtube-frame" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+    </div>
+    <div class="controls-bar">
+      <input type="text" id="urlInput" placeholder="Pega aquí el enlace de YouTube" value="https://www.youtube.com/watch?v=bTqG6zFnj3E">
+      <button class="btn" onclick="cargarVideo()">▶️ Cargar</button>
+      <span id="loading" class="loading-msg hidden">Cargando...</span>
+      <span id="errorMsg" class="loading-msg hidden" style="color: red;"></span>
+    </div>
+  </div>
+
+  <!-- Gestión de partidos -->
+  <div class="controls-bar">
+    <button class="btn btn-sm btn-info" onclick="guardarPartido()">💾 Guardar partido</button>
+    <select id="listaPartidos" style="flex:1; min-width:200px;">
+      <option value="">-- Cargar partido guardado --</option>
+    </select>
+    <button class="btn btn-sm btn-success" onclick="cargarPartido()">📂 Cargar</button>
+    <button class="btn btn-sm btn-danger" onclick="nuevoPartido()">📝 Nuevo</button>
+  </div>
+
+  <!-- Selector de jugadores y toggle -->
+  <div class="controls-bar">
+    <div class="jugador-selector">
+      <label><strong>Propio:</strong></label>
+      <select id="jugadorPropio"></select>
+      <button class="btn btn-sm btn-success" onclick="agregarJugador('propio')">➕</button>
+    </div>
+    <div class="jugador-selector">
+      <label><strong>Rival:</strong></label>
+      <select id="jugadorRival"></select>
+      <button class="btn btn-sm btn-dark" onclick="agregarJugador('rival')">➕</button>
+    </div>
+    <div class="toggle-ejecutor">
+      <button id="togglePropio" class="toggle-btn toggle-activo" onclick="cambiarEjecutor('propio')">Nosotros</button>
+      <button id="toggleRival" class="toggle-btn toggle-inactivo" onclick="cambiarEjecutor('rival')">Rival</button>
+    </div>
+    <button class="btn btn-sm btn-warning" onclick="reiniciarContadores()">🔄 Reiniciar</button>
+  </div>
+
+  <!-- Resultados con contadores -->
+  <div class="result-row">
+    <span style="font-weight:bold;">Resultado:</span>
+    <button class="btn-result btn-winner-propio" onclick="marcarResultado('winner-propio', 'propio')">
+      🚀 Winner propio <span class="result-counter" id="counter-winner-propio">0</span>
+    </button>
+    <button class="btn-result btn-out-propio" onclick="marcarResultado('out-propio', 'propio')">
+      ❌ Out propio <span class="result-counter" id="counter-out-propio">0</span>
+    </button>
+    <button class="btn-result btn-winner-rival" onclick="marcarResultado('winner-rival', 'rival')">
+      🏆 Punto rival <span class="result-counter" id="counter-winner-rival">0</span>
+    </button>
+    <button class="btn-result btn-out-rival" onclick="marcarResultado('out-rival', 'rival')">
+      ⚠️ Error rival <span class="result-counter" id="counter-out-rival">0</span>
+    </button>
+  </div>
+
+  <!-- NUEVO: Golpes con desplegables -->
+  <h2>Registro de golpes</h2>
+  <div id="golpesContainer" class="golpes-grid"></div>
+
+  <!-- Pestañas -->
+  <div class="tabs">
+    <button id="btnTabEventos" class="tab-btn active" onclick="cambiarTab('eventos')">📋 Eventos</button>
+    <button id="btnTabEstadisticas" class="tab-btn" onclick="cambiarTab('estadisticas')">📊 Estadísticas</button>
+    <button id="btnTabHeatmap" class="tab-btn" onclick="cambiarTab('heatmap')">🗺️ Mapa de Calor</button>
+  </div>
+
+  <!-- Panel de Eventos -->
+  <div id="tab-eventos" class="tab-content active stats-panel">
+    <h3>Eventos registrados</h3>
+    <p style="font-size:0.8rem;">Clic en el tiempo → retrocede 2 seg. Asigná zona de caída en la última columna.</p>
+    <table class="table-events">
+      <thead><tr><th>Ejecutor</th><th>Tiempo</th><th>Golpe</th><th>Resultado</th><th>Zona</th></tr></thead>
+      <tbody id="tablaEventos"></tbody>
+    </table>
+  </div>
+
+  <!-- Panel de Estadísticas -->
+  <div id="tab-estadisticas" class="tab-content stats-panel">
+    <h3>Estadísticas del Partido</h3>
+    <div id="summaryCards" class="summary-cards"></div>
+    <div class="chart-container"><canvas id="chartGolpes"></canvas></div>
+    <div class="export-btns">
+      <button class="btn btn-sm btn-success" onclick="exportarCSV()">📥 Exportar CSV</button>
+      <button class="btn btn-sm btn-info" onclick="exportarJSON()">📥 Exportar JSON</button>
+    </div>
+  </div>
+
+  <!-- Panel de Mapa de Calor -->
+  <div id="tab-heatmap" class="tab-content stats-panel">
+    <h3>Mapa de Calor por Golpe</h3>
+    <div class="heatmap-selector">
+      <label>Filtrar por golpe: </label>
+      <select id="heatmapGolpeSelect">
+        <option value="Todos">Todos los golpes</option>
+      </select>
+    </div>
+    <div class="heatmap-container">
+      <svg class="heatmap-svg" viewBox="0 0 400 450" id="heatmapSvg">
+        <rect width="400" height="450" fill="#e8f5e9" rx="10" />
+        <g stroke="white" stroke-width="2" fill="none">
+          <line x1="30" y1="40" x2="370" y2="40" />
+          <line x1="30" y1="410" x2="370" y2="410" />
+          <line x1="30" y1="40" x2="30" y2="410" />
+          <line x1="370" y1="40" x2="370" y2="410" />
+          <line x1="30" y1="160" x2="370" y2="160" />
+          <line x1="30" y1="290" x2="370" y2="290" />
+          <line x1="30" y1="190" x2="370" y2="190" />
+          <line x1="30" y1="260" x2="370" y2="260" />
+          <line x1="200" y1="40" x2="200" y2="410" stroke-dasharray="6,4" stroke-width="1.5" />
+          <line x1="30" y1="225" x2="370" y2="225" stroke="black" stroke-width="3" />
+        </g>
+      </svg>
+      <div class="legend">
+        <div class="legend-item"><div class="legend-color" style="background:#bbdefb;"></div> Baja</div>
+        <div class="legend-item"><div class="legend-color" style="background:#42a5f5;"></div> Media</div>
+        <div class="legend-item"><div class="legend-color" style="background:#ef5350;"></div> Alta</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ---------- CONFIGURACIÓN DE GOLPES ----------
+  const golpesConVariantes = {
+    'Drop': ['Drop Drive Paralelo', 'Drop Drive Cruzado', 'Drop Rectificado Paralelo', 'Drop Rectificado Cruzado'],
+    'Clear': ['Clear Paralelo', 'Clear Cruzado', 'Clear Revés Paralelo', 'Clear Revés Cruzado'],
+    'Smash': ['Smash Paralelo', 'Smash Cruzado', 'Stick Smash Paralelo', 'Stick Smash Cruzado', 'Smash Rectificado Paralelo', 'Smash Rectificado Cruzado'],
+    'Bloqueo': ['Bloqueo Paralelo', 'Bloqueo Cruzado', 'Bloqueo Defensivo Paralelo', 'Bloqueo Defensivo Cruzado'],
+    'Defensa': ['Defensa Paralelo', 'Defensa Cruzado', 'Defensa Profunda Paralelo', 'Defensa Profunda Cruzado'],
+    'Dejada': ['Dejada Paralelo', 'Dejada Cruzado', 'Dejada Rectificado Paralelo', 'Dejada Rectificado Cruzado'],
+    'Lob': ['Lob Paralelo', 'Lob Cruzado'],
+    'Lift': ['Lift Paralelo', 'Lift Cruzado'],
+    'Barrido': ['Barrido Paralelo', 'Barrido Cruzado', 'Barrido Revés Paralelo', 'Barrido Revés Cruzado'],
+    'Kill': ['Kill Paralelo', 'Kill Cruzado']
+  };
+
+  const todasLasVariantes = Object.values(golpesConVariantes).flat();
+
+  const zonasDisponibles = [
+    'Red Izquierda', 'Red Centro', 'Red Derecha',
+    'Media Izquierda', 'Media Centro', 'Media Derecha',
+    'Fondo Izquierda', 'Fondo Centro', 'Fondo Derecha'
+  ];
+
+  let iframe;
+  let jugadores = JSON.parse(localStorage.getItem('jugadoresBadminton') || '[]');
+  let jugadorPropio = localStorage.getItem('jugadorPropioBadminton') || '';
+  let jugadorRival = localStorage.getItem('jugadorRivalBadminton') || '';
+  let ejecutorActual = 'propio';
+  let contadores = {};
+  let eventos = [];
+
+  let resultadosContador = {
+    'winner-propio': 0,
+    'out-propio': 0,
+    'winner-rival': 0,
+    'out-rival': 0
+  };
+
+  // ---------- INICIALIZACIÓN DE CONTADORES ----------
+  function inicializarContadores() {
+    todasLasVariantes.forEach(variante => {
+      if (!(variante in contadores)) contadores[variante] = { propio: 0, rival: 0 };
+    });
+  }
+  inicializarContadores();
+
+  function guardarTodo() {
+    localStorage.setItem('contadoresBadmintonV2', JSON.stringify(contadores));
+    localStorage.setItem('eventosBadmintonV2', JSON.stringify(eventos));
+    localStorage.setItem('jugadoresBadminton', JSON.stringify(jugadores));
+    localStorage.setItem('jugadorPropioBadminton', jugadorPropio);
+    localStorage.setItem('jugadorRivalBadminton', jugadorRival);
+  }
+
+  function cargarTodo() {
+    const cont = JSON.parse(localStorage.getItem('contadoresBadmintonV2') || '{}');
+    if (Object.keys(cont).length > 0) contadores = cont;
+    const evts = JSON.parse(localStorage.getItem('eventosBadmintonV2') || '[]');
+    if (evts.length > 0) {
+      eventos = evts;
+      document.getElementById('tablaEventos').innerHTML = '';
+      eventos.forEach((e, i) => agregarFilaTabla(i, e));
+      resultadosContador = { 'winner-propio': 0, 'out-propio': 0, 'winner-rival': 0, 'out-rival': 0 };
+      eventos.forEach(e => { if (e.result) resultadosContador[e.result]++; });
+      actualizarContadoresResultados();
+    }
+    cargarListaPartidos();
+  }
+  cargarTodo();
+
+  // ---------- GESTIÓN DE PARTIDOS ----------
+  function cargarListaPartidos() {
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV2') || '[]');
+    const select = document.getElementById('listaPartidos');
+    select.innerHTML = '<option value="">-- Cargar partido guardado --</option>';
+    partidos.forEach((p, index) => {
+      const option = document.createElement('option');
+      option.value = index;
+      option.textContent = `${p.nombre} (${p.fecha}) - ${p.videoUrl || 'sin video'}`;
+      select.appendChild(option);
+    });
+  }
+
+  function guardarPartido() {
+    const nombre = prompt('Nombre para este partido:');
+    if (!nombre) return;
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV2') || '[]');
+    const nuevoPartido = {
+      nombre,
+      fecha: new Date().toLocaleString(),
+      videoUrl: document.getElementById('urlInput').value,
+      jugadores: jugadores,
+      jugadorPropio,
+      jugadorRival,
+      contadores: JSON.parse(JSON.stringify(contadores)),
+      eventos: JSON.parse(JSON.stringify(eventos)),
+      resultadosContador: { ...resultadosContador }
+    };
+    partidos.push(nuevoPartido);
+    localStorage.setItem('partidosBadmintonV2', JSON.stringify(partidos));
+    cargarListaPartidos();
+    alert('Partido guardado.');
+  }
+
+  function cargarPartido() {
+    const select = document.getElementById('listaPartidos');
+    const index = select.value;
+    if (index === '') { alert('Selecciona un partido.'); return; }
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV2') || '[]');
+    const partido = partidos[parseInt(index)];
+    if (!partido) return;
+    jugadores = partido.jugadores || [];
+    jugadorPropio = partido.jugadorPropio || '';
+    jugadorRival = partido.jugadorRival || '';
+    contadores = partido.contadores;
+    eventos = partido.eventos || [];
+    resultadosContador = partido.resultadosContador || { 'winner-propio': 0, 'out-propio': 0, 'winner-rival': 0, 'out-rival': 0 };
+    document.getElementById('urlInput').value = partido.videoUrl || '';
+    actualizarSelectores();
+    document.getElementById('jugadorPropio').value = jugadorPropio;
+    document.getElementById('jugadorRival').value = jugadorRival;
+    guardarTodo();
+    actualizarTodosLosContadoresVisuales();
+    actualizarContadoresResultados();
+    document.getElementById('tablaEventos').innerHTML = '';
+    eventos.forEach((e, i) => agregarFilaTabla(i, e));
+    cargarVideo();
+    alert('Partido cargado.');
+  }
+
+  function nuevoPartido() {
+    if (confirm('¿Empezar nuevo análisis? Se limpiarán los datos actuales.')) {
+      contadores = {};
+      inicializarContadores();
+      eventos = [];
+      resultadosContador = { 'winner-propio': 0, 'out-propio': 0, 'winner-rival': 0, 'out-rival': 0 };
+      actualizarContadoresResultados();
+      guardarTodo();
+      document.getElementById('tablaEventos').innerHTML = '';
+      actualizarTodosLosContadoresVisuales();
+    }
+  }
+
+  // ---------- VIDEO (igual que antes) ----------
+  function extraerID(url) {
+    const regex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  }
+
+  function cargarVideo() {
+    const url = document.getElementById('urlInput').value.trim();
+    document.getElementById('errorMsg').classList.add('hidden');
+    document.getElementById('loading').classList.remove('hidden');
+    if (!url) { mostrarError('Pega un enlace de YouTube.'); return; }
+    const videoId = extraerID(url);
+    if (!videoId) { mostrarError('No se pudo extraer el ID.'); return; }
+    iframe = document.getElementById('youtube-frame');
+    iframe.src = `https://www.youtube.com/embed/${videoId}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  function mostrarError(mensaje) {
+    document.getElementById('errorMsg').textContent = mensaje;
+    document.getElementById('errorMsg').classList.remove('hidden');
+    document.getElementById('loading').classList.add('hidden');
+  }
+
+  window.addEventListener('message', (event) => {
+    if (event.origin !== 'https://www.youtube.com') return;
+    try {
+      const data = JSON.parse(event.data);
+      if (data.event === 'infoDelivery' && data.info?.currentTime) {
+        window.iframeCurrentTime = data.info.currentTime;
+      }
+    } catch(e) {}
+  });
+
+  function solicitarTiempo() {
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage('{"event":"listening","id":1}', 'https://www.youtube.com');
+  }
+  setInterval(solicitarTiempo, 500);
+
+  function seekTo(seconds) {
+    if (!iframe?.contentWindow) return;
+    iframe.contentWindow.postMessage(
+      JSON.stringify({event: 'command', func: 'seekTo', args: [seconds, true]}),
+      'https://www.youtube.com'
+    );
+  }
+
+  // ---------- JUGADORES ----------
+  function actualizarSelectores() {
+    const selPropio = document.getElementById('jugadorPropio');
+    const selRival = document.getElementById('jugadorRival');
+    const opciones = jugadores.map(j => `<option value="${j}" ${j === jugadorPropio ? 'selected' : ''}>${j}</option>`).join('');
+    selPropio.innerHTML = opciones || '<option value="">-- Sin jugador --</option>';
+    selRival.innerHTML = jugadores.map(j => `<option value="${j}" ${j === jugadorRival ? 'selected' : ''}>${j}</option>`).join('') || '<option value="">-- Sin jugador --</option>';
+  }
+
+  function agregarJugador(tipo) {
+    const nombre = prompt('Nombre del jugador:');
+    if (nombre && !jugadores.includes(nombre)) {
+      jugadores.push(nombre);
+      localStorage.setItem('jugadoresBadminton', JSON.stringify(jugadores));
+      if (tipo === 'propio') {
+        jugadorPropio = nombre;
+        localStorage.setItem('jugadorPropioBadminton', nombre);
+      } else {
+        jugadorRival = nombre;
+        localStorage.setItem('jugadorRivalBadminton', nombre);
+      }
+      actualizarSelectores();
+      document.getElementById(tipo === 'propio' ? 'jugadorPropio' : 'jugadorRival').value = nombre;
+    }
+  }
+
+  document.getElementById('jugadorPropio').addEventListener('change', (e) => {
+    jugadorPropio = e.target.value;
+    localStorage.setItem('jugadorPropioBadminton', jugadorPropio);
+  });
+  document.getElementById('jugadorRival').addEventListener('change', (e) => {
+    jugadorRival = e.target.value;
+    localStorage.setItem('jugadorRivalBadminton', jugadorRival);
+  });
+
+  function cambiarEjecutor(ejecutor) {
+    ejecutorActual = ejecutor;
+    document.getElementById('togglePropio').className = `toggle-btn ${ejecutor === 'propio' ? 'toggle-activo' : 'toggle-inactivo'}`;
+    document.getElementById('toggleRival').className = `toggle-btn ${ejecutor === 'rival' ? 'toggle-activo' : 'toggle-inactivo'}`;
+  }
+
+  // ---------- REGISTRO DE GOLPES (con variante) ----------
+  function registrarGolpe(varianteCompleta) {
+    if (!iframe?.src) { alert('Carga un video primero.'); return; }
+    const jugador = ejecutorActual === 'propio' ? jugadorPropio : jugadorRival;
+    if (!jugador) {
+      alert(`Debes seleccionar un jugador ${ejecutorActual === 'propio' ? 'propio' : 'rival'}.`);
+      return;
+    }
+    const tiempo = window.iframeCurrentTime;
+    if (tiempo === undefined || tiempo === null) {
+      alert('Espera unos segundos a que el video esté listo.');
+      solicitarTiempo();
+      return;
+    }
+
+    if (!contadores[varianteCompleta]) contadores[varianteCompleta] = { propio: 0, rival: 0 };
+    contadores[varianteCompleta][ejecutorActual]++;
+    guardarTodo();
+    actualizarBadgeDeVariante(varianteCompleta);
+
+    const evento = {
+      jugador, tiempo, tipo: varianteCompleta, ejecutor: ejecutorActual,
+      result: null,
+      zona: null
+    };
+    eventos.push(evento);
+    agregarFilaTabla(eventos.length - 1, evento);
+    guardarTodo();
+  }
+
+  function agregarFilaTabla(index, evento) {
+    const tbody = document.getElementById('tablaEventos');
+    const fila = tbody.insertRow();
+    fila.id = `row-${index}`;
+    const mins = Math.floor(evento.tiempo / 60);
+    const secs = Math.floor(evento.tiempo % 60);
+
+    let zonaOptions = zonasDisponibles.map(z => `<option value="${z}" ${evento.zona === z ? 'selected' : ''}>${z}</option>`).join('');
+    zonaOptions = `<option value="">--</option>` + zonaOptions;
+
+    fila.innerHTML = `
+      <td>${evento.jugador} (${evento.ejecutor === 'propio' ? 'Nos.' : 'Riv.'})</td>
+      <td class="tiempo-cell" data-tiempo="${evento.tiempo}">${mins}:${secs.toString().padStart(2, '0')}</td>
+      <td>${evento.tipo}</td>
+      <td class="result-cell">${evento.result ? `<span class="result-badge result-${evento.result}">${evento.result.replace('-', ' ')}</span>` : ''}</td>
+      <td>
+        <select class="zona-select" data-index="${index}">
+          ${zonaOptions}
+        </select>
+      </td>
+    `;
+
+    fila.querySelector('.tiempo-cell').addEventListener('click', () => seekTo(Math.max(0, evento.tiempo - 2)));
+    fila.querySelector('.zona-select').addEventListener('change', function(e) {
+      const idx = parseInt(this.dataset.index);
+      eventos[idx].zona = e.target.value || null;
+      guardarTodo();
+    });
+  }
+
+  function actualizarFilaResultado(index, result) {
+    const fila = document.getElementById(`row-${index}`);
+    if (!fila) return;
+    fila.querySelector('.result-cell').innerHTML = result ? `<span class="result-badge result-${result}">${result.replace('-', ' ')}</span>` : '';
+  }
+
+  // ---------- RESULTADOS ----------
+  function marcarResultado(result, ejecutorRequerido) {
+    const eventosSinResultado = eventos.filter(e => e.result === null && e.ejecutor === ejecutorRequerido);
+    if (eventosSinResultado.length === 0) {
+      alert(`No hay golpes de ${ejecutorRequerido === 'propio' ? 'tu equipo' : 'del rival'} sin resultado.`);
+      return;
+    }
+    const ultimo = eventosSinResultado[eventosSinResultado.length - 1];
+    const index = eventos.indexOf(ultimo);
+    eventos[index].result = result;
+    guardarTodo();
+    actualizarFilaResultado(index, result);
+    resultadosContador[result]++;
+    actualizarContadoresResultados();
+  }
+
+  function actualizarContadoresResultados() {
+    document.getElementById('counter-winner-propio').textContent = resultadosContador['winner-propio'];
+    document.getElementById('counter-out-propio').textContent = resultadosContador['out-propio'];
+    document.getElementById('counter-winner-rival').textContent = resultadosContador['winner-rival'];
+    document.getElementById('counter-out-rival').textContent = resultadosContador['out-rival'];
+  }
+
+  // ---------- INTERFAZ DE GOLPES DESPLEGABLES ----------
+  function crearBotones() {
+    const container = document.getElementById('golpesContainer');
+    container.innerHTML = '';
+    for (const [golpeBase, variantes] of Object.entries(golpesConVariantes)) {
+      const card = document.createElement('div');
+      card.className = 'golpe-card';
+
+      // Botón principal que despliega/oculta
+      const btnGolpe = document.createElement('div');
+      btnGolpe.className = 'golpe-nombre';
+      btnGolpe.textContent = golpeBase;
+      btnGolpe.addEventListener('click', function(e) {
+        e.stopPropagation();
+        const variantesDiv = this.nextElementSibling;
+        variantesDiv.classList.toggle('visible');
+      });
+
+      // Contenedor de variantes
+      const variantesDiv = document.createElement('div');
+      variantesDiv.className = 'variantes-container';
+
+      variantes.forEach(variante => {
+        const btnVar = document.createElement('button');
+        btnVar.className = 'variante-btn';
+        const total = (contadores[variante]?.propio || 0) + (contadores[variante]?.rival || 0);
+        btnVar.innerHTML = `${variante} <span class="badge" id="cont-${variante.replace(/\s/g, '_')}">${total}</span>`;
+        btnVar.addEventListener('click', (e) => {
+          e.stopPropagation();
+          registrarGolpe(variante);
+          // Ocultar el desplegable después de seleccionar (opcional)
+          variantesDiv.classList.remove('visible');
+        });
+        variantesDiv.appendChild(btnVar);
+      });
+
+      card.appendChild(btnGolpe);
+      card.appendChild(variantesDiv);
+      container.appendChild(card);
+    }
+  }
+
+  function actualizarBadgeDeVariante(variante) {
+    const badge = document.getElementById(`cont-${variante.replace(/\s/g, '_')}`);
+    if (badge) {
+      const total = (contadores[variante]?.propio || 0) + (contadores[variante]?.rival || 0);
+      badge.textContent = total;
+    }
+  }
+
+  function actualizarTodosLosContadoresVisuales() {
+    todasLasVariantes.forEach(variante => {
+      actualizarBadgeDeVariante(variante);
+    });
+  }
+
+  function reiniciarContadores() {
+    if (confirm('¿Reiniciar todo?')) {
+      contadores = {};
+      inicializarContadores();
+      eventos = [];
+      resultadosContador = { 'winner-propio': 0, 'out-propio': 0, 'winner-rival': 0, 'out-rival': 0 };
+      actualizarContadoresResultados();
+      guardarTodo();
+      document.getElementById('tablaEventos').innerHTML = '';
+      actualizarTodosLosContadoresVisuales();
+    }
+  }
+
+  // ---------- PESTAÑAS ----------
+  function cambiarTab(tabId) {
+    document.getElementById('btnTabEventos').classList.remove('active');
+    document.getElementById('btnTabEstadisticas').classList.remove('active');
+    document.getElementById('btnTabHeatmap').classList.remove('active');
+    document.getElementById('tab-eventos').classList.remove('active');
+    document.getElementById('tab-estadisticas').classList.remove('active');
+    document.getElementById('tab-heatmap').classList.remove('active');
+
+    if (tabId === 'eventos') {
+      document.getElementById('btnTabEventos').classList.add('active');
+      document.getElementById('tab-eventos').classList.add('active');
+    } else if (tabId === 'estadisticas') {
+      document.getElementById('btnTabEstadisticas').classList.add('active');
+      document.getElementById('tab-estadisticas').classList.add('active');
+      generarEstadisticas();
+    } else if (tabId === 'heatmap') {
+      document.getElementById('btnTabHeatmap').classList.add('active');
+      document.getElementById('tab-heatmap').classList.add('active');
+      inicializarMapaCalor();
+    }
+  }
+
+  // ---------- MAPA DE CALOR (sin cambios) ----------
+  function inicializarMapaCalor() {
+    const select = document.getElementById('heatmapGolpeSelect');
+    select.innerHTML = '<option value="Todos">Todos los golpes</option>';
+    const golpesUnicos = [...new Set(eventos.map(e => e.tipo))].sort();
+    golpesUnicos.forEach(golpe => {
+      const option = document.createElement('option');
+      option.value = golpe;
+      option.textContent = golpe;
+      select.appendChild(option);
+    });
+    select.onchange = () => dibujarHeatmap(select.value);
+    dibujarHeatmap('Todos');
+  }
+
+  function dibujarHeatmap(filtroGolpe) {
+    const svg = document.getElementById('heatmapSvg');
+    svg.querySelectorAll('.zone-rect').forEach(el => el.remove());
+    svg.querySelectorAll('text').forEach(el => el.remove());
+
+    let eventosFiltrados = eventos.filter(e => e.zona !== null && e.zona !== undefined && e.zona !== '');
+    if (filtroGolpe !== 'Todos') {
+      eventosFiltrados = eventosFiltrados.filter(e => e.tipo === filtroGolpe);
+    }
+
+    const conteo = {};
+    zonasDisponibles.forEach(z => conteo[z] = 0);
+    eventosFiltrados.forEach(e => conteo[e.zona]++);
+
+    const max = Math.max(...Object.values(conteo), 1);
+    const min = Math.min(...Object.values(conteo));
+
+    function getColor(valor) {
+      if (max === min) return '#95a5a6';
+      const ratio = (valor - min) / (max - min);
+      const r = Math.round(59 + ratio * (239 - 59));
+      const g = Math.round(130 + ratio * (83 - 130));
+      const b = Math.round(246 + ratio * (80 - 246));
+      return `rgb(${r},${g},${b})`;
+    }
+
+    const zonasCoords = [
+      { zona: 'Red Izquierda', x: 30, y: 40, w: 113, h: 150 },
+      { zona: 'Red Centro', x: 144, y: 40, w: 112, h: 150 },
+      { zona: 'Red Derecha', x: 257, y: 40, w: 113, h: 150 },
+      { zona: 'Media Izquierda', x: 30, y: 190, w: 113, h: 70 },
+      { zona: 'Media Centro', x: 144, y: 190, w: 112, h: 70 },
+      { zona: 'Media Derecha', x: 257, y: 190, w: 113, h: 70 },
+      { zona: 'Fondo Izquierda', x: 30, y: 260, w: 113, h: 150 },
+      { zona: 'Fondo Centro', x: 144, y: 260, w: 112, h: 150 },
+      { zona: 'Fondo Derecha', x: 257, y: 260, w: 113, h: 150 }
+    ];
+
+    zonasCoords.forEach(zc => {
+      const freq = conteo[zc.zona];
+      const fillColor = getColor(freq);
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute('x', zc.x);
+      rect.setAttribute('y', zc.y);
+      rect.setAttribute('width', zc.w);
+      rect.setAttribute('height', zc.h);
+      rect.setAttribute('fill', fillColor);
+      rect.setAttribute('rx', '4');
+      rect.setAttribute('class', 'zone-rect');
+      svg.appendChild(rect);
+
+      const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+      text.setAttribute('x', zc.x + zc.w/2);
+      text.setAttribute('y', zc.y + zc.h/2);
+      text.setAttribute('text-anchor', 'middle');
+      text.setAttribute('fill', freq > max/2 ? 'white' : 'black');
+      text.setAttribute('font-size', '12');
+      text.setAttribute('font-weight', 'bold');
+      text.textContent = `${zc.zona.split(' ')[0].substring(0,3)} ${freq}`;
+      svg.appendChild(text);
+    });
+  }
+
+  // ---------- ESTADÍSTICAS ----------
+  let chartGolpes;
+  function generarEstadisticas() {
+    document.getElementById('summaryCards').innerHTML = `
+      <div class="summary-card" style="border-left:4px solid #28a745"><h4>Winners propios</h4><div class="number">${resultadosContador['winner-propio']}</div></div>
+      <div class="summary-card" style="border-left:4px solid #dc3545"><h4>Errores propios</h4><div class="number">${resultadosContador['out-propio']}</div></div>
+      <div class="summary-card" style="border-left:4px solid #ffc107"><h4>Puntos rival</h4><div class="number">${resultadosContador['winner-rival']}</div></div>
+      <div class="summary-card" style="border-left:4px solid #6c757d"><h4>Errores rival</h4><div class="number">${resultadosContador['out-rival']}</div></div>
+    `;
+
+    if (chartGolpes) chartGolpes.destroy();
+    const ctx1 = document.getElementById('chartGolpes').getContext('2d');
+    const labels = todasLasVariantes;
+    const dataPropio = labels.map(v => contadores[v]?.propio || 0);
+    const dataRival = labels.map(v => contadores[v]?.rival || 0);
+    chartGolpes = new Chart(ctx1, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Propios', data: dataPropio, backgroundColor: 'rgba(54,162,235,0.7)' },
+          { label: 'Rival', data: dataRival, backgroundColor: 'rgba(255,99,132,0.7)' }
+        ]
+      },
+      options: { responsive: true, plugins: { title: { display: true, text: 'Golpes por tipo (todas las variantes)' } } }
+    });
+  }
+
+  function exportarCSV() {
+    let csv = 'Ejecutor,Jugador,Tiempo,Golpe,Resultado,Zona\n';
+    eventos.forEach(e => csv += `${e.ejecutor},${e.jugador},${e.tiempo.toFixed(1)},${e.tipo},${e.result||''},${e.zona||''}\n`);
+    descargarArchivo(csv, 'eventos.csv', 'text/csv');
+  }
+  function exportarJSON() {
+    descargarArchivo(JSON.stringify(eventos, null, 2), 'eventos.json', 'application/json');
+  }
+  function descargarArchivo(contenido, nombre, tipo) {
+    const blob = new Blob([contenido], { type: tipo });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = nombre;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  // ---------- INICIO ----------
+  actualizarSelectores();
+  crearBotones();
+  cargarListaPartidos();
+  cargarVideo();
+  actualizarContadoresResultados();
+</script>
+</body>
+</html>
