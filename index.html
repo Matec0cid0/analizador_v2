@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analizador de Bádminton v2 - Golpes Desplegables</title>
+  <title>Analizador de Bádminton v3 - Compacto por Zonas</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <style>
     * { box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 10px; background: #f0f2f5; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; margin: 0; padding: 8px; background: #f0f2f5; font-size: 0.85rem; }
     .container { max-width: 1300px; margin: auto; }
 
-    .player-section { margin-bottom: 10px; }
+    .player-section { margin-bottom: 8px; }
     #player-wrapper {
       position: relative; width: 100%; padding-bottom: 56.25%; background: #000;
       border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
@@ -18,130 +18,134 @@
     #player-wrapper iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none; }
 
     .controls-bar {
-      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-      margin: 10px 0; background: white; padding: 10px; border-radius: 8px;
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      margin: 6px 0; background: white; padding: 8px; border-radius: 8px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     }
-    .controls-bar input { flex: 1; min-width: 200px; padding: 8px; border: 1px solid #ccc; border-radius: 5px; }
+    .controls-bar input { flex: 1; min-width: 180px; padding: 6px; border: 1px solid #ccc; border-radius: 5px; font-size: 0.8rem; }
     .btn {
-      padding: 8px 14px; background: #007bff; color: white; border: none; border-radius: 5px;
-      cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap; font-size: 0.9rem;
+      padding: 6px 12px; background: #007bff; color: white; border: none; border-radius: 5px;
+      cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap; font-size: 0.8rem;
     }
     .btn:hover { background: #0056b3; }
-    .btn-sm { padding: 5px 10px; font-size: 0.8rem; }
+    .btn-sm { padding: 4px 8px; font-size: 0.75rem; }
     .btn-success { background: #28a745; } .btn-success:hover { background: #1e7e34; }
     .btn-danger { background: #dc3545; } .btn-danger:hover { background: #a71d2a; }
     .btn-warning { background: #ffc107; color: #212529; } .btn-warning:hover { background: #d39e00; }
     .btn-info { background: #17a2b8; } .btn-info:hover { background: #117a8b; }
     .btn-dark { background: #343a40; } .btn-dark:hover { background: #1d2124; }
 
-    .jugador-selector { display: flex; align-items: center; gap: 8px; }
-    .jugador-selector select { padding: 6px; border-radius: 5px; border: 1px solid #ccc; }
+    .jugador-selector { display: flex; align-items: center; gap: 6px; }
+    .jugador-selector select { padding: 4px; border-radius: 5px; border: 1px solid #ccc; font-size: 0.8rem; }
 
-    .toggle-ejecutor { display: flex; gap: 8px; align-items: center; }
-    .toggle-btn { padding: 6px 12px; border-radius: 16px; cursor: pointer; font-weight: bold; font-size: 0.8rem; }
+    .toggle-ejecutor { display: flex; gap: 6px; align-items: center; }
+    .toggle-btn { padding: 4px 10px; border-radius: 14px; cursor: pointer; font-weight: bold; font-size: 0.75rem; }
     .toggle-activo { background: #007bff; color: white; }
     .toggle-inactivo { background: #e9ecef; color: #333; }
 
     .result-row {
-      display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
-      background: white; padding: 10px; border-radius: 8px; margin: 10px 0;
+      display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+      background: white; padding: 8px; border-radius: 8px; margin: 8px 0;
       box-shadow: 0 1px 4px rgba(0,0,0,0.05);
     }
     .btn-result {
-      padding: 8px 12px; border: none; border-radius: 20px; font-weight: bold; cursor: pointer;
-      font-size: 0.85rem; transition: 0.2s; display: flex; align-items: center; gap: 6px;
+      padding: 6px 10px; border: none; border-radius: 16px; font-weight: bold; cursor: pointer;
+      font-size: 0.75rem; transition: 0.2s; display: flex; align-items: center; gap: 4px;
     }
     .btn-winner-propio { background: #d4edda; color: #155724; border: 2px solid #28a745; }
     .btn-out-propio { background: #f8d7da; color: #721c24; border: 2px solid #dc3545; }
     .btn-winner-rival { background: #fff3cd; color: #856404; border: 2px solid #ffc107; }
     .btn-out-rival { background: #e2e3e5; color: #383d41; border: 2px solid #6c757d; }
     .result-counter {
-      background: rgba(0,0,0,0.1); border-radius: 10px; padding: 2px 8px;
-      font-size: 0.8rem; margin-left: 4px;
+      background: rgba(0,0,0,0.1); border-radius: 8px; padding: 2px 6px;
+      font-size: 0.7rem; margin-left: 2px;
     }
 
-    /* Golpes desplegables */
+    /* Zonas y golpes compactos */
+    .zona-golpes { margin-bottom: 15px; }
+    .zona-titulo {
+      font-size: 1rem; font-weight: bold; margin: 8px 0 4px; color: #333;
+      border-bottom: 2px solid #007bff; padding-bottom: 2px;
+    }
     .golpes-grid {
-      display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px;
-      margin: 15px 0;
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 6px;
     }
     .golpe-card {
-      background: white; border-radius: 8px; padding: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      background: white; border-radius: 6px; padding: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
     .golpe-nombre {
-      font-weight: bold; font-size: 0.9rem; margin-bottom: 6px; text-align: center;
-      padding: 8px; background: #007bff; color: white; border-radius: 6px;
+      font-weight: bold; font-size: 0.8rem; text-align: center;
+      padding: 6px; background: #007bff; color: white; border-radius: 4px;
       cursor: pointer; user-select: none; transition: background 0.2s;
     }
     .golpe-nombre:hover { background: #0056b3; }
     .variantes-container {
-      display: none;
-      flex-direction: column; gap: 4px; margin-top: 6px;
+      display: none; flex-direction: column; gap: 3px; margin-top: 4px;
     }
     .variantes-container.visible { display: flex; }
     .variante-btn {
-      padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px;
-      background: #f8f9fa; cursor: pointer; font-size: 0.8rem;
+      padding: 4px 4px; border: 1px solid #ddd; border-radius: 3px;
+      background: #f8f9fa; cursor: pointer; font-size: 0.7rem;
       position: relative; text-align: center; transition: background 0.2s;
+      line-height: 1.2;
     }
     .variante-btn:hover { background: #e2e6ea; }
     .badge {
-      position: absolute; top: -6px; right: -6px; background: #333; color: white;
-      border-radius: 50%; width: 20px; height: 20px;
+      position: absolute; top: -5px; right: -5px; background: #333; color: white;
+      border-radius: 50%; width: 18px; height: 18px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
     }
 
     .stats-panel {
-      background: white; border-radius: 10px; padding: 15px; margin-top: 10px;
+      background: white; border-radius: 8px; padding: 10px; margin-top: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    .table-events { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 0.85rem; }
-    .table-events th, .table-events td { border: 1px solid #dee2e6; padding: 6px; text-align: left; }
+    .table-events { width: 100%; border-collapse: collapse; margin-top: 6px; font-size: 0.75rem; }
+    .table-events th, .table-events td { border: 1px solid #dee2e6; padding: 4px; text-align: left; }
     .table-events th { background: #e9ecef; }
     .table-events td.tiempo-cell { cursor: pointer; color: #007bff; text-decoration: underline; }
     .table-events td.tiempo-cell:hover { color: #0056b3; }
 
     .hidden { display: none !important; }
-    .loading-msg { color: #6c757d; margin-left: 10px; font-size: 0.85rem; }
+    .loading-msg { color: #6c757d; margin-left: 8px; font-size: 0.8rem; }
 
-    .result-badge { padding: 2px 6px; border-radius: 10px; font-size: 0.75rem; font-weight: bold; }
+    .result-badge { padding: 1px 5px; border-radius: 8px; font-size: 0.7rem; font-weight: bold; }
     .result-winner-propio { background: #d4edda; color: #155724; }
     .result-out-propio { background: #f8d7da; color: #721c24; }
     .result-winner-rival { background: #fff3cd; color: #856404; }
     .result-out-rival { background: #e2e3e5; color: #383d41; }
 
-    .tabs { display: flex; gap: 5px; margin: 10px 0 0 0; }
+    .tabs { display: flex; gap: 4px; margin: 8px 0 0 0; }
     .tab-btn {
-      padding: 8px 14px; background: #e9ecef; border: none; border-radius: 6px 6px 0 0;
-      cursor: pointer; font-weight: bold; font-size: 0.85rem;
+      padding: 6px 12px; background: #e9ecef; border: none; border-radius: 5px 5px 0 0;
+      cursor: pointer; font-weight: bold; font-size: 0.8rem;
     }
     .tab-btn.active { background: #007bff; color: white; }
     .tab-content { display: none; }
     .tab-content.active { display: block; }
 
-    .chart-container { width: 100%; max-width: 500px; margin: 15px auto; }
+    .chart-container { width: 100%; max-width: 500px; margin: 10px auto; }
     canvas { width: 100%; height: auto; }
-    .export-btns { display: flex; gap: 8px; margin-top: 8px; justify-content: flex-end; }
+    .export-btns { display: flex; gap: 6px; margin-top: 6px; justify-content: flex-end; }
 
-    .summary-cards { display: flex; gap: 10px; margin: 15px 0; flex-wrap: wrap; }
+    .summary-cards { display: flex; gap: 8px; margin: 10px 0; flex-wrap: wrap; }
     .summary-card {
-      flex: 1; min-width: 120px; background: white; border-radius: 8px;
-      padding: 10px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+      flex: 1; min-width: 100px; background: white; border-radius: 6px;
+      padding: 8px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
-    .summary-card h4 { margin: 0 0 6px 0; font-size: 0.8rem; }
-    .summary-card .number { font-size: 1.8rem; font-weight: bold; }
+    .summary-card h4 { margin: 0 0 4px 0; font-size: 0.7rem; }
+    .summary-card .number { font-size: 1.5rem; font-weight: bold; }
 
     .heatmap-container { display: flex; flex-direction: column; align-items: center; }
-    .heatmap-selector { margin-bottom: 15px; }
-    .heatmap-svg { width: 100%; max-width: 400px; height: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+    .heatmap-selector { margin-bottom: 10px; }
+    .heatmap-svg { width: 100%; max-width: 350px; height: auto; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
     .zone-rect { transition: fill 0.3s; cursor: pointer; }
     .zone-rect:hover { stroke: black; stroke-width: 2; }
-    .legend { display: flex; gap: 10px; justify-content: center; margin-top: 10px; }
-    .legend-item { display: flex; align-items: center; gap: 4px; font-size: 0.8rem; }
-    .legend-color { width: 20px; height: 20px; border-radius: 4px; }
+    .legend { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
+    .legend-item { display: flex; align-items: center; gap: 3px; font-size: 0.7rem; }
+    .legend-color { width: 16px; height: 16px; border-radius: 3px; }
   </style>
 </head>
 <body>
@@ -153,7 +157,7 @@
       <iframe id="youtube-frame" src="" allowfullscreen allow="autoplay; encrypted-media"></iframe>
     </div>
     <div class="controls-bar">
-      <input type="text" id="urlInput" placeholder="Pega aquí el enlace de YouTube" value="https://www.youtube.com/watch?v=bTqG6zFnj3E">
+      <input type="text" id="urlInput" placeholder="Enlace de YouTube" value="https://www.youtube.com/watch?v=bTqG6zFnj3E">
       <button class="btn" onclick="cargarVideo()">▶️ Cargar</button>
       <span id="loading" class="loading-msg hidden">Cargando...</span>
       <span id="errorMsg" class="loading-msg hidden" style="color: red;"></span>
@@ -162,11 +166,11 @@
 
   <!-- Gestión de partidos -->
   <div class="controls-bar">
-    <button class="btn btn-sm btn-info" onclick="guardarPartido()">💾 Guardar partido</button>
-    <select id="listaPartidos" style="flex:1; min-width:200px;">
-      <option value="">-- Cargar partido guardado --</option>
+    <button class="btn btn-sm btn-info" onclick="guardarPartido()">💾 Guardar</button>
+    <select id="listaPartidos" style="flex:1; min-width:160px; font-size:0.8rem;">
+      <option value="">-- Cargar partido --</option>
     </select>
-    <button class="btn btn-sm btn-success" onclick="cargarPartido()">📂 Cargar</button>
+    <button class="btn btn-sm btn-success" onclick="cargarPartido()">📂 Abrir</button>
     <button class="btn btn-sm btn-danger" onclick="nuevoPartido()">📝 Nuevo</button>
   </div>
 
@@ -206,9 +210,10 @@
     </button>
   </div>
 
-  <!-- NUEVO: Golpes con desplegables inteligentes -->
-  <h2>Registro de golpes</h2>
-  <div id="golpesContainer" class="golpes-grid"></div>
+  <!-- GOLPES AGRUPADOS POR ZONA -->
+  <div id="golpesContainer">
+    <!-- Se generan dinámicamente por zonas -->
+  </div>
 
   <!-- Pestañas -->
   <div class="tabs">
@@ -217,48 +222,39 @@
     <button id="btnTabHeatmap" class="tab-btn" onclick="cambiarTab('heatmap')">🗺️ Mapa de Calor</button>
   </div>
 
-  <!-- Panel de Eventos -->
   <div id="tab-eventos" class="tab-content active stats-panel">
     <h3>Eventos registrados</h3>
-    <p style="font-size:0.8rem;">Clic en el tiempo → retrocede 2 seg. Asigná zona de caída en la última columna.</p>
+    <p style="font-size:0.7rem;">Clic en el tiempo → retrocede 2 seg. Asigna zona de caída.</p>
     <table class="table-events">
       <thead><tr><th>Ejecutor</th><th>Tiempo</th><th>Golpe</th><th>Resultado</th><th>Zona</th></tr></thead>
       <tbody id="tablaEventos"></tbody>
     </table>
   </div>
 
-  <!-- Panel de Estadísticas -->
   <div id="tab-estadisticas" class="tab-content stats-panel">
     <h3>Estadísticas del Partido</h3>
     <div id="summaryCards" class="summary-cards"></div>
     <div class="chart-container"><canvas id="chartGolpes"></canvas></div>
     <div class="export-btns">
-      <button class="btn btn-sm btn-success" onclick="exportarCSV()">📥 Exportar CSV</button>
-      <button class="btn btn-sm btn-info" onclick="exportarJSON()">📥 Exportar JSON</button>
+      <button class="btn btn-sm btn-success" onclick="exportarCSV()">📥 CSV</button>
+      <button class="btn btn-sm btn-info" onclick="exportarJSON()">📥 JSON</button>
     </div>
   </div>
 
-  <!-- Panel de Mapa de Calor -->
   <div id="tab-heatmap" class="tab-content stats-panel">
     <h3>Mapa de Calor por Golpe</h3>
     <div class="heatmap-selector">
-      <label>Filtrar por golpe: </label>
-      <select id="heatmapGolpeSelect">
-        <option value="Todos">Todos los golpes</option>
-      </select>
+      <label>Filtrar: </label>
+      <select id="heatmapGolpeSelect"><option value="Todos">Todos</option></select>
     </div>
     <div class="heatmap-container">
       <svg class="heatmap-svg" viewBox="0 0 400 450" id="heatmapSvg">
         <rect width="400" height="450" fill="#e8f5e9" rx="10" />
         <g stroke="white" stroke-width="2" fill="none">
-          <line x1="30" y1="40" x2="370" y2="40" />
-          <line x1="30" y1="410" x2="370" y2="410" />
-          <line x1="30" y1="40" x2="30" y2="410" />
-          <line x1="370" y1="40" x2="370" y2="410" />
-          <line x1="30" y1="160" x2="370" y2="160" />
-          <line x1="30" y1="290" x2="370" y2="290" />
-          <line x1="30" y1="190" x2="370" y2="190" />
-          <line x1="30" y1="260" x2="370" y2="260" />
+          <line x1="30" y1="40" x2="370" y2="40" /><line x1="30" y1="410" x2="370" y2="410" />
+          <line x1="30" y1="40" x2="30" y2="410" /><line x1="370" y1="40" x2="370" y2="410" />
+          <line x1="30" y1="160" x2="370" y2="160" /><line x1="30" y1="290" x2="370" y2="290" />
+          <line x1="30" y1="190" x2="370" y2="190" /><line x1="30" y1="260" x2="370" y2="260" />
           <line x1="200" y1="40" x2="200" y2="410" stroke-dasharray="6,4" stroke-width="1.5" />
           <line x1="30" y1="225" x2="370" y2="225" stroke="black" stroke-width="3" />
         </g>
@@ -274,47 +270,30 @@
 </div>
 
 <script>
-  // ---------- CONFIGURACIÓN DE GOLPES ----------
-  const golpesConVariantes = {
-    'Drop': [
-      'Drop Drive Paralelo', 'Drop Drive Cruzado',
-      'Drop Rectificado Paralelo', 'Drop Rectificado Cruzado'
-    ],
-    'Clear': [
-      'Clear Paralelo', 'Clear Cruzado',
-      'Clear Revés Paralelo', 'Clear Revés Cruzado'
-    ],
-    'Smash': [
-      'Smash Paralelo', 'Smash Cruzado',
-      'Stick Smash Paralelo', 'Stick Smash Cruzado'
-    ],
-    'Bloqueo': [
-      'Bloqueo Paralelo', 'Bloqueo Cruzado'
-    ],
-    'Defensa': [
-      'Defensa Paralelo', 'Defensa Cruzado',
-      'Defensa Profunda Paralelo', 'Defensa Profunda Cruzado'
-    ],
-    'Dejada': [
-      'Dejada Paralelo', 'Dejada Cruzado',
-      'Dejada Rectificado Paralelo', 'Dejada Rectificado Cruzado'
-    ],
-    'Lob': [
-      'Lob Paralelo', 'Lob Cruzado'
-    ],
-    'Lift': [
-      'Lift Paralelo', 'Lift Cruzado'
-    ],
-    'Barrido': [
-      'Barrido Paralelo', 'Barrido Cruzado',
-      'Barrido Revés Paralelo', 'Barrido Revés Cruzado'
-    ],
-    'Kill': [
-      'Kill Paralelo', 'Kill Cruzado'
-    ]
+  // ---------- GOLPES AGRUPADOS POR ZONA ----------
+  const golpesPorZona = {
+    'Fondo': {
+      'Drop': ['Drop Drive Paralelo', 'Drop Drive Cruzado', 'Drop Rectificado Paralelo', 'Drop Rectificado Cruzado'],
+      'Smash': ['Smash Drive Paralelo', 'Smash Drive Cruzado', 'Smash Rectificado Paralelo', 'Smash Rectificado Cruzado'],
+      'Stick Smash': ['Stick Smash Drive Paralelo', 'Stick Smash Drive Cruzado', 'Stick Smash Rectificado Paralelo', 'Stick Smash Rectificado Cruzado'],
+      'Clear': ['Clear Drive Paralelo', 'Clear Drive Cruzado', 'Clear Rectificado Paralelo', 'Clear Rectificado Cruzado'],
+      'Reves': ['Reves Drop Paralelo', 'Reves Drop Cruzado', 'Reves Clear Paralelo', 'Reves Clear Cruzado'],
+      'Barrido': ['Barrido Drive Paralelo', 'Barrido Drive Cruzado', 'Barrido Reves Paralelo', 'Barrido Reves Cruzado']
+    },
+    'Mitad': {
+      'Defensa': ['Defensa Drive Paralelo', 'Defensa Drive Cruzada', 'Defensa Reves Paralela', 'Defensa Reves Cruzada'],
+      'Bloqueo': ['Bloqueo Drive Paralelo', 'Bloqueo Drive Cruzado', 'Bloqueo Reves Paralelo', 'Bloqueo Reves Cruzado'],
+      'Lift': ['Lift Drive Paralelo', 'Lift Drive Cruzado', 'Lift Reves Paralelo', 'Lift Reves Cruzado']
+    },
+    'Red': {
+      'Lob': ['Lob Drive Paralelo', 'Lob Drive Cruzado', 'Lob Reves Paralelo', 'Lob Reves Cruzado'],
+      'Dejada': ['Dejada Drive Paralela', 'Dejada Drive Cruzada', 'Dejada Reves Paralela', 'Dejada Reves Cruzada'],
+      'Kill': ['Kill Drive Paralela', 'Kill Drive Cruzada', 'Kill Reves Paralela', 'Kill Reves Cruzada']
+    }
   };
 
-  const todasLasVariantes = Object.values(golpesConVariantes).flat();
+  // Lista plana de todas las variantes para contadores y estadísticas
+  const todasLasVariantes = Object.values(golpesPorZona).flatMap(zona => Object.values(zona).flat());
 
   const zonasDisponibles = [
     'Red Izquierda', 'Red Centro', 'Red Derecha',
@@ -339,24 +318,22 @@
 
   // ---------- INICIALIZACIÓN ----------
   function inicializarContadores() {
-    todasLasVariantes.forEach(v => {
-      if (!(v in contadores)) contadores[v] = { propio: 0, rival: 0 };
-    });
+    todasLasVariantes.forEach(v => { if (!(v in contadores)) contadores[v] = { propio: 0, rival: 0 }; });
   }
   inicializarContadores();
 
   function guardarTodo() {
-    localStorage.setItem('contadoresBadmintonV2', JSON.stringify(contadores));
-    localStorage.setItem('eventosBadmintonV2', JSON.stringify(eventos));
+    localStorage.setItem('contadoresBadmintonV3', JSON.stringify(contadores));
+    localStorage.setItem('eventosBadmintonV3', JSON.stringify(eventos));
     localStorage.setItem('jugadoresBadminton', JSON.stringify(jugadores));
     localStorage.setItem('jugadorPropioBadminton', jugadorPropio);
     localStorage.setItem('jugadorRivalBadminton', jugadorRival);
   }
 
   function cargarTodo() {
-    const cont = JSON.parse(localStorage.getItem('contadoresBadmintonV2') || '{}');
+    const cont = JSON.parse(localStorage.getItem('contadoresBadmintonV3') || '{}');
     if (Object.keys(cont).length > 0) contadores = cont;
-    const evts = JSON.parse(localStorage.getItem('eventosBadmintonV2') || '[]');
+    const evts = JSON.parse(localStorage.getItem('eventosBadmintonV3') || '[]');
     if (evts.length > 0) {
       eventos = evts;
       document.getElementById('tablaEventos').innerHTML = '';
@@ -371,31 +348,30 @@
 
   // ---------- GESTIÓN DE PARTIDOS ----------
   function cargarListaPartidos() {
-    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV2') || '[]');
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV3') || '[]');
     const select = document.getElementById('listaPartidos');
-    select.innerHTML = '<option value="">-- Cargar partido guardado --</option>';
+    select.innerHTML = '<option value="">-- Cargar partido --</option>';
     partidos.forEach((p, i) => {
-      const option = document.createElement('option');
-      option.value = i;
-      option.textContent = `${p.nombre} (${p.fecha}) - ${p.videoUrl || 'sin video'}`;
-      select.appendChild(option);
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `${p.nombre} (${p.fecha})`;
+      select.appendChild(opt);
     });
   }
 
   function guardarPartido() {
     const nombre = prompt('Nombre del partido:');
     if (!nombre) return;
-    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV2') || '[]');
+    const partidos = JSON.parse(localStorage.getItem('partidosBadmintonV3') || '[]');
     partidos.push({
-      nombre,
-      fecha: new Date().toLocaleString(),
+      nombre, fecha: new Date().toLocaleString(),
       videoUrl: document.getElementById('urlInput').value,
       jugadores, jugadorPropio, jugadorRival,
       contadores: JSON.parse(JSON.stringify(contadores)),
       eventos: JSON.parse(JSON.stringify(eventos)),
       resultadosContador: { ...resultadosContador }
     });
-    localStorage.setItem('partidosBadmintonV2', JSON.stringify(partidos));
+    localStorage.setItem('partidosBadmintonV3', JSON.stringify(partidos));
     cargarListaPartidos();
     alert('Partido guardado.');
   }
@@ -403,7 +379,7 @@
   function cargarPartido() {
     const idx = document.getElementById('listaPartidos').value;
     if (idx === '') return alert('Selecciona un partido.');
-    const partido = JSON.parse(localStorage.getItem('partidosBadmintonV2') || '[]')[parseInt(idx)];
+    const partido = JSON.parse(localStorage.getItem('partidosBadmintonV3') || '[]')[parseInt(idx)];
     if (!partido) return;
     jugadores = partido.jugadores || [];
     jugadorPropio = partido.jugadorPropio || '';
@@ -426,8 +402,7 @@
 
   function nuevoPartido() {
     if (!confirm('¿Empezar un nuevo análisis?')) return;
-    contadores = {};
-    inicializarContadores();
+    contadores = {}; inicializarContadores();
     eventos = [];
     resultadosContador = { 'winner-propio': 0, 'out-propio': 0, 'winner-rival': 0, 'out-rival': 0 };
     actualizarContadoresResultados();
@@ -446,9 +421,9 @@
     const url = document.getElementById('urlInput').value.trim();
     document.getElementById('errorMsg').classList.add('hidden');
     document.getElementById('loading').classList.remove('hidden');
-    if (!url) return mostrarError('Pega un enlace de YouTube.');
+    if (!url) return mostrarError('Pega un enlace.');
     const id = extraerID(url);
-    if (!id) return mostrarError('No se pudo extraer el ID.');
+    if (!id) return mostrarError('ID no válido.');
     iframe = document.getElementById('youtube-frame');
     iframe.src = `https://www.youtube.com/embed/${id}?enablejsapi=1&origin=${encodeURIComponent(window.location.origin)}`;
     document.getElementById('loading').classList.add('hidden');
@@ -462,22 +437,12 @@
 
   window.addEventListener('message', (e) => {
     if (e.origin !== 'https://www.youtube.com') return;
-    try {
-      const data = JSON.parse(e.data);
-      if (data.event === 'infoDelivery' && data.info?.currentTime) {
-        window.iframeCurrentTime = data.info.currentTime;
-      }
-    } catch(ex) {}
+    try { const d = JSON.parse(e.data); if (d.event === 'infoDelivery' && d.info?.currentTime) window.iframeCurrentTime = d.info.currentTime; } catch(ex) {}
   });
-
-  setInterval(() => {
-    if (!iframe?.contentWindow) return;
-    iframe.contentWindow.postMessage('{"event":"listening","id":1}', 'https://www.youtube.com');
-  }, 500);
+  setInterval(() => { if (iframe?.contentWindow) iframe.contentWindow.postMessage('{"event":"listening","id":1}', 'https://www.youtube.com'); }, 500);
 
   function seekTo(s) {
-    if (!iframe?.contentWindow) return;
-    iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[s,true]}), 'https://www.youtube.com');
+    if (iframe?.contentWindow) iframe.contentWindow.postMessage(JSON.stringify({event:'command',func:'seekTo',args:[s,true]}), 'https://www.youtube.com');
   }
 
   // ---------- JUGADORES ----------
@@ -494,17 +459,11 @@
     if (!nombre || jugadores.includes(nombre)) return;
     jugadores.push(nombre);
     localStorage.setItem('jugadoresBadminton', JSON.stringify(jugadores));
-    if (tipo === 'propio') {
-      jugadorPropio = nombre;
-      localStorage.setItem('jugadorPropioBadminton', nombre);
-    } else {
-      jugadorRival = nombre;
-      localStorage.setItem('jugadorRivalBadminton', nombre);
-    }
+    if (tipo === 'propio') { jugadorPropio = nombre; localStorage.setItem('jugadorPropioBadminton', nombre); }
+    else { jugadorRival = nombre; localStorage.setItem('jugadorRivalBadminton', nombre); }
     actualizarSelectores();
     document.getElementById(tipo==='propio'?'jugadorPropio':'jugadorRival').value = nombre;
   }
-
   document.getElementById('jugadorPropio').onchange = e => { jugadorPropio = e.target.value; localStorage.setItem('jugadorPropioBadminton', jugadorPropio); };
   document.getElementById('jugadorRival').onchange = e => { jugadorRival = e.target.value; localStorage.setItem('jugadorRivalBadminton', jugadorRival); };
 
@@ -516,11 +475,11 @@
 
   // ---------- REGISTRO DE GOLPES ----------
   function registrarGolpe(variante) {
-    if (!iframe?.src) return alert('Carga un video primero.');
+    if (!iframe?.src) return alert('Carga un video.');
     const jugador = ejecutorActual === 'propio' ? jugadorPropio : jugadorRival;
     if (!jugador) return alert(`Falta jugador ${ejecutorActual}.`);
     const tiempo = window.iframeCurrentTime;
-    if (tiempo == null) return alert('Espera que el video esté listo.');
+    if (tiempo == null) return alert('Espera el video.');
 
     if (!contadores[variante]) contadores[variante] = { propio: 0, rival: 0 };
     contadores[variante][ejecutorActual]++;
@@ -541,7 +500,6 @@
     const s = Math.floor(ev.tiempo % 60);
     let zonas = zonasDisponibles.map(z => `<option value="${z}" ${ev.zona===z?'selected':''}>${z}</option>`).join('');
     zonas = '<option value="">--</option>' + zonas;
-
     fila.innerHTML = `
       <td>${ev.jugador} (${ev.ejecutor==='propio'?'Nos.':'Riv.'})</td>
       <td class="tiempo-cell" data-tiempo="${ev.tiempo}">${m}:${s.toString().padStart(2,'0')}</td>
@@ -580,42 +538,55 @@
     document.getElementById('counter-out-rival').textContent = resultadosContador['out-rival'];
   }
 
-  // ---------- BOTONES DESPLEGABLES ----------
+  // ---------- INTERFAZ DE GOLPES POR ZONA ----------
   function crearBotones() {
     const container = document.getElementById('golpesContainer');
     container.innerHTML = '';
-    for (const [base, variantes] of Object.entries(golpesConVariantes)) {
-      const card = document.createElement('div');
-      card.className = 'golpe-card';
+    
+    for (const [zona, golpes] of Object.entries(golpesPorZona)) {
+      const zonaDiv = document.createElement('div');
+      zonaDiv.className = 'zona-golpes';
+      zonaDiv.innerHTML = `<div class="zona-titulo">${zona}</div>`;
+      
+      const grid = document.createElement('div');
+      grid.className = 'golpes-grid';
 
-      const btnBase = document.createElement('div');
-      btnBase.className = 'golpe-nombre';
-      btnBase.textContent = base;
-      btnBase.onclick = function(e) {
-        e.stopPropagation();
-        const panel = this.nextElementSibling;
-        panel.classList.toggle('visible');
-      };
+      for (const [nombreBase, variantes] of Object.entries(golpes)) {
+        const card = document.createElement('div');
+        card.className = 'golpe-card';
 
-      const panel = document.createElement('div');
-      panel.className = 'variantes-container';
-
-      variantes.forEach(v => {
-        const btnVar = document.createElement('button');
-        btnVar.className = 'variante-btn';
-        const total = (contadores[v]?.propio || 0) + (contadores[v]?.rival || 0);
-        btnVar.innerHTML = `${v} <span class="badge" id="cont-${v.replace(/\s/g, '_')}">${total}</span>`;
-        btnVar.onclick = function(e) {
+        const btnBase = document.createElement('div');
+        btnBase.className = 'golpe-nombre';
+        btnBase.textContent = nombreBase;
+        btnBase.onclick = function(e) {
           e.stopPropagation();
-          registrarGolpe(v);
-          panel.classList.remove('visible'); // Contraer tras seleccionar
+          const panel = this.nextElementSibling;
+          panel.classList.toggle('visible');
         };
-        panel.appendChild(btnVar);
-      });
 
-      card.appendChild(btnBase);
-      card.appendChild(panel);
-      container.appendChild(card);
+        const panel = document.createElement('div');
+        panel.className = 'variantes-container';
+
+        variantes.forEach(v => {
+          const btnVar = document.createElement('button');
+          btnVar.className = 'variante-btn';
+          const total = (contadores[v]?.propio || 0) + (contadores[v]?.rival || 0);
+          btnVar.innerHTML = `${v.replace(nombreBase + ' ', '')} <span class="badge" id="cont-${v.replace(/\s/g, '_')}">${total}</span>`;
+          btnVar.onclick = function(e) {
+            e.stopPropagation();
+            registrarGolpe(v);
+            panel.classList.remove('visible');
+          };
+          panel.appendChild(btnVar);
+        });
+
+        card.appendChild(btnBase);
+        card.appendChild(panel);
+        grid.appendChild(card);
+      }
+      
+      zonaDiv.appendChild(grid);
+      container.appendChild(zonaDiv);
     }
   }
 
@@ -633,8 +604,7 @@
 
   function reiniciarContadores() {
     if (!confirm('¿Reiniciar todo?')) return;
-    contadores = {};
-    inicializarContadores();
+    contadores = {}; inicializarContadores();
     eventos = [];
     resultadosContador = { 'winner-propio': 0, 'out-propio': 0, 'winner-rival': 0, 'out-rival': 0 };
     actualizarContadoresResultados();
@@ -655,15 +625,13 @@
     if (tab === 'heatmap') inicializarMapaCalor();
   }
 
-  // ---------- MAPA DE CALOR (idéntico) ----------
+  // ---------- MAPA DE CALOR ----------
   function inicializarMapaCalor() {
     const select = document.getElementById('heatmapGolpeSelect');
-    select.innerHTML = '<option value="Todos">Todos los golpes</option>';
+    select.innerHTML = '<option value="Todos">Todos</option>';
     [...new Set(eventos.map(e => e.tipo))].sort().forEach(g => {
       const opt = document.createElement('option');
-      opt.value = g;
-      opt.textContent = g;
-      select.appendChild(opt);
+      opt.value = g; opt.textContent = g; select.appendChild(opt);
     });
     select.onchange = () => dibujarHeatmap(select.value);
     dibujarHeatmap('Todos');
@@ -704,7 +672,7 @@
       txt.setAttribute('x', x+w/2); txt.setAttribute('y', y+h/2);
       txt.setAttribute('text-anchor', 'middle');
       txt.setAttribute('fill', freq > max/2 ? 'white' : 'black');
-      txt.setAttribute('font-size', '11'); txt.setAttribute('font-weight', 'bold');
+      txt.setAttribute('font-size', '10'); txt.setAttribute('font-weight', 'bold');
       txt.textContent = `${zona.split(' ')[0].substring(0,3)} ${freq}`;
       svg.appendChild(txt);
     });
@@ -714,8 +682,8 @@
   let chartGolpes;
   function generarEstadisticas() {
     document.getElementById('summaryCards').innerHTML = `
-      <div class="summary-card" style="border-left:4px solid #28a745"><h4>Winners propios</h4><div class="number">${resultadosContador['winner-propio']}</div></div>
-      <div class="summary-card" style="border-left:4px solid #dc3545"><h4>Errores propios</h4><div class="number">${resultadosContador['out-propio']}</div></div>
+      <div class="summary-card" style="border-left:4px solid #28a745"><h4>Winners prop.</h4><div class="number">${resultadosContador['winner-propio']}</div></div>
+      <div class="summary-card" style="border-left:4px solid #dc3545"><h4>Errores prop.</h4><div class="number">${resultadosContador['out-propio']}</div></div>
       <div class="summary-card" style="border-left:4px solid #ffc107"><h4>Puntos rival</h4><div class="number">${resultadosContador['winner-rival']}</div></div>
       <div class="summary-card" style="border-left:4px solid #6c757d"><h4>Errores rival</h4><div class="number">${resultadosContador['out-rival']}</div></div>
     `;
